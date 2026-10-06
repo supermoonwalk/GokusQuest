@@ -100,6 +100,8 @@
   .inv-icon{ width:8cqmin; height:8cqmin; grid-row:1 / span 2; image-rendering:pixelated; background:#efe0bd; border:0.4cqmin solid var(--parchEdge); }
   .inv-name{ font-family:'Press Start 2P',monospace; font-size:2.4cqmin; color:var(--ink); align-self:end; }
   .inv-desc{ font-size:3cqmin; color:var(--ink2); align-self:start; }
+  .inv-cell.has-use{ grid-template-columns:auto 1fr auto; }
+  .inv-use{ grid-column:3; grid-row:1 / span 2; align-self:center; }
 
   /* ---------- SHOP ---------- */
   #shop-panel .box{ width:84%; }
@@ -315,19 +317,6 @@
     </div>
   </div>
 
-  <script src="src/game/sprites.js"></script>
-  <script src="src/game/sprites2.js"></script>
-  <script src="src/game/tiles.js"></script>
-  <script src="src/game/tiles2.js"></script>
-  <script src="src/game/tiles3.js"></script>
-  <script src="src/game/world.js"></script>
-  <script src="src/game/world2.js"></script>
-  <script src="src/game/engine.js"></script>
-  <script src="src/game/render.js"></script>
-  <script src="src/game/combat.js"></script>
-  <script src="src/game/shop.js"></script>
-  <script src="src/game/ui.js"></script>
-  <script src="src/game/save.js"></script>
-  <script src="src/game/main.js"></script>
+  <script type="module" src="./src/main.js"></script>
 </body>
 </html>

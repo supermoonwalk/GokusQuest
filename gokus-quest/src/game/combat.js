@@ -39,7 +39,7 @@
     if (p.atkCD > 0) p.atkCD--;
     if (p.atkTimer > 0) {
       p.atkTimer--;
-      if (p.atkTimer === ATK_DUR - 3) resolveSwipe();   // active frame
+      if (p.atkTimer === p.atkHit) resolveSwipe();      // active frame
     }
     if (p.spin > 0) {
       p.spin--;
@@ -194,7 +194,10 @@
   function playerAttack() {
     const p = G.player;
     if (p.dead || p.spin > 0 || p.atkTimer > 0 || p.atkCD > 0) return;
-    p.atkTimer = ATK_DUR; p.atkDur = ATK_DUR; p.atkCD = ATK_DUR + ATK_CD;
+    // the Speed upgrade also quickens the swipe: +10% attack rate per level
+    const f = 1 + G.upgrades.spd * 0.1;
+    const dur = Math.round(ATK_DUR / f), cd = Math.round(ATK_CD / f);
+    p.atkTimer = dur; p.atkDur = dur; p.atkHit = dur - 3; p.atkCD = dur + cd;
     G.fx.push({ kind: "swoosh", t: 0, life: 6 });
   }
   function resolveSwipe() {
@@ -251,14 +254,13 @@
       if (e.type !== "monster" || !e.alive) continue;
       const ec = { x: e.px + 8, y: e.py + 8 };
       const d = Math.hypot(ec.x - c.x, ec.y - c.y);
-      if (d < 26 && !e._spinHit) {
-        e._spinHit = true;
+      if (d < 26 && !(e._spinHitUntil > G.frame)) {
+        e._spinHitUntil = G.frame + 12;      // one hit per ~200ms of the spin
         const dmg = Math.max(1, Math.round(p.atk * 2.2) + rnd(4) - (e.def || 0));
         const a = Math.atan2(ec.y - c.y, ec.x - c.x);
         e.hp -= dmg; e.hurtFlash = 6; popText(e.px + 4, e.py - 2, "" + dmg, "#ffe08a");
         Engine.moveEntity(e, Math.cos(a) * 9, Math.sin(a) * 9, mbox(e));
         if (e.hp <= 0) { Engine.onMonsterDefeated(e); G.fx.push({ kind: "poof", x: e.px + 8, y: e.py + 8, t: 0, life: 14 }); }
-        setTimeout(() => { e._spinHit = false; }, 200);
       }
     }
   }

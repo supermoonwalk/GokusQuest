@@ -379,6 +379,19 @@
     }
   }
 
+  function useTreat() {
+    const p = G.player;
+    if (p.dead) return false;
+    if (G.treats <= 0) { Combat.popText(p.px - 4, p.py - 2, "NO TREATS", "#ffb0b0"); return false; }
+    if (p.hp >= p.maxHp) { Combat.popText(p.px - 2, p.py - 2, "HP FULL", "#cfeaff"); return false; }
+    G.treats--;
+    const heal = Math.min(14, p.maxHp - p.hp);
+    p.hp += heal;
+    Combat.popText(p.px + 4, p.py - 2, "+" + heal, "#6fd06f");
+    UI.updateHud();
+    return true;
+  }
+
   function addItem(id) { if (!G.inventory.includes(id)) G.inventory.push(id); }
   function setQuest(step) { G.quest = step; UI.updateHud(); }
 
@@ -466,7 +479,7 @@
     init, update, render: null, interact, setQuest, warpTo,
     onMonsterDefeated, onPlayerDeath, recalcPlayer,
     equipGear, unequipSlot, sellGear, autoEquipIfBetter, freedCount,
-    spawnCoins, updateScriptedNpcs, centerOf, moveEntity, updateCamera,
+    spawnCoins, updateScriptedNpcs, centerOf, moveEntity, updateCamera, useTreat,
     VPW, VPH, TS, PBOX, tileSolid, boxHitsSolid,
   };
 })();

@@ -20,18 +20,6 @@
     w: "up", s: "down", a: "left", d: "right", W: "up", S: "down", A: "left", D: "right",
   };
 
-  function useTreat() {
-    const p = G.player;
-    if (p.dead) return;
-    if (G.treats <= 0) { Combat.popText(p.px - 4, p.py - 2, "NO TREATS", "#ffb0b0"); return; }
-    if (p.hp >= p.maxHp) { Combat.popText(p.px - 2, p.py - 2, "HP FULL", "#cfeaff"); return; }
-    G.treats--;
-    const heal = Math.min(14, p.maxHp - p.hp);
-    p.hp += heal;
-    Combat.popText(p.px + 4, p.py - 2, "+" + heal, "#6fd06f");
-    UI.updateHud();
-  }
-
   function onKeyDown(e) {
     const k = e.key;
     if (G.state === "title") {
@@ -60,13 +48,23 @@
     else if (k === "e" || k === "E") { e.preventDefault(); Engine.interact(); }
     else if (k === "j" || k === "J" || k === "1") { e.preventDefault(); Combat.useSpecial(0); }
     else if (k === "k" || k === "K" || k === "2") { e.preventDefault(); Combat.useSpecial(1); }
-    else if (k === "t" || k === "T") { e.preventDefault(); useTreat(); }
+    else if (k === "t" || k === "T") { e.preventDefault(); Engine.useTreat(); }
   }
   function onKeyUp(e) { if (DIR[e.key]) G.keys[DIR[e.key]] = false; }
 
-  function loop() {
-    Engine.update();
-    if (G.state !== "title" && G.maps[G.cur]) {
+  // fixed timestep: game logic always runs at 60 updates/s, whatever the
+  // monitor refresh rate; rendering happens once per animation frame.
+  const STEP = 1000 / 60;
+  const MAX_STEPS = 5;               // after a long stall (tab hidden), don't fast-forward
+  let last = 0, acc = 0;
+
+  function loop(now) {
+    if (!last) last = now;
+    acc += Math.min(now - last, STEP * MAX_STEPS);
+    last = now;
+    let stepped = false;
+    while (acc >= STEP) { Engine.update(); acc -= STEP; stepped = true; }
+    if (stepped && G.state !== "title" && G.maps[G.cur]) {
       Engine.render(ctx);
       if (G.state === "map") UI.drawMap();
       UI.updateHud();

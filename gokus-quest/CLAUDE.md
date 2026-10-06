@@ -12,8 +12,8 @@ Browser pixel-art action RPG. Vanilla JS + Canvas 2D. Read README.md first.
 - Monster stats in `World.MONSTERS` (world.js); quest steps in `World.QUEST` (world.js + world2.js).
 
 ## Roadmap to release (do in order, one PR each)
-1. Convert classic scripts to ES modules (`import`/`export`), entry `src/main.js`, keep behaviour identical.
-2. Fixed-timestep loop (60 updates/s, render decoupled) so speed doesn't depend on refresh rate.
+1. Convert classic scripts to ES modules (`import`/`export`), entry `src/main.js`, keep behaviour identical. (Partly done: `src/main.js` imports the files in order so `vite build` bundles them; files still use globals.)
+2. ~~Fixed-timestep loop~~ (done — `src/game/main.js`).
 3. ~~Save/load~~ (done — `save.js`; bump `VERSION` there when the save shape changes): serialize relevant parts of `G` (cur, player pos/hp, coins, treats, flags, quest, upgrades, gear, specials, entity alive/caged/opened states) to localStorage; Continue option on title.
 4. Input abstraction: keyboard + Gamepad API + on-screen touch controls (d-pad, swipe, interact, J/K).
 5. Audio: SFX + music per map (`map.music` already defined), with volume settings.

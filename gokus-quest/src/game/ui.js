@@ -141,7 +141,7 @@
   /* -------------------- MENUS (quest / inventory) -------------------- */
   const ITEM_INFO = {
     ribbon: { name: "Chi Chi's Ribbon", desc: "Her favourite red ribbon. A promise to return it." },
-    treat: { name: "Fish Treats", desc: "Crunchy dried sardines. Press T to eat one (heals 14 HP)." },
+    treat: { name: "Fish Treats", desc: "Crunchy dried sardines. Heals 14 HP (or press T)." },
   };
   function toggleMenu(which) {
     if (G.state === "menu" && G.menu === which) { closeMenu(); return; }
@@ -195,7 +195,7 @@
     // items
     const items = [];
     if (G.flags.ribbon) items.push("ribbon");
-    items.push("treat");
+    if (G.treats > 0) items.push("treat");
     items.forEach(id => {
       const info = ITEM_INFO[id];
       const cell = document.createElement("div"); cell.className = "inv-cell";
@@ -208,8 +208,21 @@
       nm.textContent = info.name + (id === "treat" ? " x" + G.treats : "");
       const ds = document.createElement("div"); ds.className = "inv-desc"; ds.textContent = info.desc;
       cell.appendChild(nm); cell.appendChild(ds);
+      if (id === "treat") {
+        const full = p.hp >= p.maxHp;
+        const b = document.createElement("button");
+        b.className = "shop-buy inv-use" + (full ? " broke" : "");
+        b.textContent = full ? "HP FULL" : "EAT";
+        b.disabled = full;
+        b.addEventListener("click", () => { if (Engine.useTreat()) renderInventory(); });
+        cell.classList.add("has-use"); cell.appendChild(b);
+      }
       grid.appendChild(cell);
     });
+    if (!items.length) {
+      const empty = document.createElement("div"); empty.className = "inv-desc"; empty.textContent = "Nothing in your bag yet.";
+      grid.appendChild(empty);
+    }
   }
   function drawTreatIcon(cx) {
     const pal = { o:"#7a5230", b:"#d8a85a", h:"#f0d28a", e:"#5a5560" };
