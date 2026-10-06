@@ -32,7 +32,12 @@
 
   function onKeyDown(e) {
     const k = e.key;
-    if (G.state === "title") { if (k === "Enter" || k === " ") { e.preventDefault(); UI.startGame(); } return; }
+    if (G.state === "title") {
+      if (k === "Enter" || k === " ") { e.preventDefault(); UI.chooseTitle(); }
+      else if (DIR[k] === "up" || DIR[k] === "left") { e.preventDefault(); UI.moveTitleSel(-1); }
+      else if (DIR[k] === "down" || DIR[k] === "right") { e.preventDefault(); UI.moveTitleSel(1); }
+      return;
+    }
     if (G.state === "ending") { if (k === "Enter" || k === " ") { e.preventDefault(); location.reload(); } return; }
     if (G.state === "cutscene") { if (k === "Enter" || k === " ") { e.preventDefault(); UI.endChapterCard(); } return; }
     if (G.state === "dialogue") { if (k === "Enter" || k === " " || k === "e" || k === "E") { e.preventDefault(); UI.advanceDialogue(); } return; }
@@ -75,13 +80,14 @@
 
     Engine.init();
     UI.drawTitleCat();
+    UI.initTitleMenu();
 
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
     window.addEventListener("resize", resize);
     window.addEventListener("blur", () => { G.keys = {}; });
 
-    document.getElementById("title").addEventListener("click", () => { if (G.state === "title") UI.startGame(); });
+    document.querySelectorAll(".title-opt").forEach(b => b.addEventListener("click", () => UI.chooseTitle(b.dataset.act)));
     document.getElementById("dialogue").addEventListener("click", () => { if (G.state === "dialogue") UI.advanceDialogue(); });
 
     document.getElementById("btn-quest").addEventListener("click", () => UI.toggleMenu("quest"));

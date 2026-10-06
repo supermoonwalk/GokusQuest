@@ -36,15 +36,16 @@ Controls: WASD/arrows move · Space swipe · E interact · J/K specials · T tre
 | `src/game/combat.js` | Real-time combat, enemy AI, specials, FX |
 | `src/game/shop.js` | Shop panel |
 | `src/game/ui.js` | Dialogue, HUD, menus, map, title, cutscenes, ending |
+| `src/game/save.js` | Save/load to localStorage, autosave, checkpoints |
 | `src/game/main.js` | Boot, scaling, keyboard input, game loop |
 
 Internal resolution: 256×192 (16×12 tiles), integer-scaled to the window.
-Scripts are classic `<script>` tags sharing globals (`G`, `Engine`, `World`, `Tiles`, `Sprites`, `Combat`, `UI`, `Shop`); load order in `index.html` matters.
+Scripts are classic `<script>` tags sharing globals (`G`, `Engine`, `World`, `Tiles`, `Sprites`, `Combat`, `UI`, `Shop`, `Save`); load order in `index.html` matters.
 
 ## Before publishing
 
 1. **Name / IP**: "Goku" and "Chi Chi" are Dragon Ball character names (Toei / Shueisha / Bird Studio). Rename before any commercial or public storefront release.
-2. **Save system**: none yet — progress is lost on reload.
+2. **Save system**: autosaves to localStorage (`save.js`) on map changes, every ~5s of play and on tab close; Continue / New Game on the title.
 3. **Touch / gamepad**: keyboard only (main.js has stubs for `#btn-attack` / `#btn-act` but no buttons exist).
 4. **Fonts**: loaded from Google Fonts — self-host Press Start 2P and Pixelify Sans (both OFL) for offline/desktop builds.
 5. **Audio**: none yet.

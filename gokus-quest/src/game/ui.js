@@ -234,6 +234,57 @@
     cx.clearRect(0, 0, cv.width, cv.height);
     Sprites.drawCat(cx, "goku", "down", 0, 0, { scale: 6 });
   }
+  // title menu: CONTINUE (only with a save) / NEW GAME
+  let titleSel = 0, confirmNew = false;
+  function titleOptions() {
+    return Array.from(document.querySelectorAll(".title-opt")).filter(b => b.style.display !== "none");
+  }
+  function initTitleMenu() {
+    const hasSave = Save.has();
+    el("opt-continue").style.display = hasSave ? "" : "none";
+    el("opt-new").textContent = "NEW GAME";
+    titleSel = 0; confirmNew = false;
+    renderTitleMenu();
+  }
+  function renderTitleMenu() {
+    titleOptions().forEach((b, i) => b.classList.toggle("sel", i === titleSel));
+  }
+  function moveTitleSel(d) {
+    const n = titleOptions().length;
+    titleSel = (titleSel + d + n) % n;
+    if (confirmNew) { confirmNew = false; el("opt-new").textContent = "NEW GAME"; }
+    renderTitleMenu();
+  }
+  function chooseTitle(act) {
+    if (G.state !== "title") return;
+    if (!act) { const b = titleOptions()[titleSel]; act = b && b.dataset.act; }
+    if (act === "continue") { continueGame(); return; }
+    if (act === "new") {
+      // starting over wipes the save: ask once
+      if (Save.has() && !confirmNew) {
+        confirmNew = true; el("opt-new").textContent = "OVERWRITE SAVE?";
+        titleSel = titleOptions().indexOf(el("opt-new")); renderTitleMenu();
+        return;
+      }
+      Save.clear(); startGame();
+    }
+  }
+  function continueGame() {
+    if (!Save.load()) { initTitleMenu(); return; }
+    el("title").classList.remove("show");
+    G.state = "play";
+    Engine.updateCamera(); updateHud();
+    // saved right after entering the manor, before the chapter card finished
+    if (G.flags.enteredManor && !G.flags.learnedSlam) { showChapterCard(); return; }
+    showDialogue(null, ["Welcome back, Goku. Chi Chi is still out there."]);
+  }
+  let savedTimer = null;
+  function showSaved() {
+    const t = el("save-toast"); if (!t) return;
+    t.classList.add("show");
+    clearTimeout(savedTimer); savedTimer = setTimeout(() => t.classList.remove("show"), 1200);
+  }
+
   function startGame() {
     el("title").classList.remove("show");
     G.state = "play"; updateHud();
@@ -302,6 +353,7 @@
   /* -------------------- FINALE -------------------- */
   function showFinale() {
     G.state = "ending";
+    Save.clear();             // story complete: next boot starts fresh
     el("ending").classList.add("show");
     el("ending-title").textContent = "DOMINION UNDONE";
     const freed = (Engine.freedCount ? Engine.freedCount() : 0);
@@ -326,6 +378,7 @@
     showDialogue, advanceDialogue, updateHud,
     toggleMenu, closeMenu, toggleMap, closeMap, drawMap,
     flashTransition, startGame, drawTitleCat,
+    initTitleMenu, moveTitleSel, chooseTitle, continueGame, showSaved,
     showChapterCard, endChapterCard, vesperReveal, showFinale,
     get dialogueOpen() { return !!D; },
   };

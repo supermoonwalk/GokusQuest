@@ -14,7 +14,7 @@ Browser pixel-art action RPG. Vanilla JS + Canvas 2D. Read README.md first.
 ## Roadmap to release (do in order, one PR each)
 1. Convert classic scripts to ES modules (`import`/`export`), entry `src/main.js`, keep behaviour identical.
 2. Fixed-timestep loop (60 updates/s, render decoupled) so speed doesn't depend on refresh rate.
-3. Save/load: serialize relevant parts of `G` (cur, player pos/hp, coins, treats, flags, quest, upgrades, gear, specials, entity alive/caged/opened states) to localStorage; Continue option on title.
+3. ~~Save/load~~ (done — `save.js`; bump `VERSION` there when the save shape changes): serialize relevant parts of `G` (cur, player pos/hp, coins, treats, flags, quest, upgrades, gear, specials, entity alive/caged/opened states) to localStorage; Continue option on title.
 4. Input abstraction: keyboard + Gamepad API + on-screen touch controls (d-pad, swipe, interact, J/K).
 5. Audio: SFX + music per map (`map.music` already defined), with volume settings.
 6. Pause/settings menu (volume, fullscreen, key rebinding).

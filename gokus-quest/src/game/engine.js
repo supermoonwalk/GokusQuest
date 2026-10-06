@@ -158,6 +158,7 @@
     pickupCoins();
     checkWarps();
     updateCamera();
+    Save.tick();
   }
 
   function pickupCoins() {
@@ -209,15 +210,16 @@
     UI.flashTransition();
     updateCamera();
     if (G.cur === "forest" && G.quest === "deduced") setQuest("fighting");
-    if (G.cur === "manor" && !G.flags.enteredManor) {
-      G.flags.enteredManor = true;
-      setQuest("manor");
+    const firstManor = G.cur === "manor" && !G.flags.enteredManor;
+    const firstInterior = G.cur === "interior" && !G.flags.searched;
+    if (firstManor) { G.flags.enteredManor = true; setQuest("manor"); }
+    if (firstInterior) { G.flags.searched = true; if (G.quest === "start") setQuest("searched"); }
+    Save.checkpoint();
+    if (firstManor) {
       setTimeout(() => UI.showChapterCard(), 260);
       return;
     }
-    if (G.cur === "interior" && !G.flags.searched) {
-      G.flags.searched = true;
-      if (G.quest === "start") setQuest("searched");
+    if (firstInterior) {
       UI.showDialogue("Goku", [
         "Chi Chi? ...Chi Chi, are you home?",
         "The cottage is ransacked. Something's wrong. Look for clues \u2014 walk up to things and press E."
@@ -464,7 +466,7 @@
     init, update, render: null, interact, setQuest, warpTo,
     onMonsterDefeated, onPlayerDeath, recalcPlayer,
     equipGear, unequipSlot, sellGear, autoEquipIfBetter, freedCount,
-    spawnCoins, updateScriptedNpcs, centerOf, moveEntity,
+    spawnCoins, updateScriptedNpcs, centerOf, moveEntity, updateCamera,
     VPW, VPH, TS, PBOX, tileSolid, boxHitsSolid,
   };
 })();
