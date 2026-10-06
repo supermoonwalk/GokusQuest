@@ -8,6 +8,7 @@ Pixel-art action RPG for the browser. Vanilla JavaScript + Canvas 2D, no depende
 npm install
 npm run dev        # http://localhost:5173
 npm run build      # static build in dist/
+npm test           # plays the whole story in a headless browser (first time: npx playwright install chromium)
 ```
 
 Needs a web server (scripts load as an ES module): use `npm run dev`, or serve `dist/` after a build. Opening `index.html` straight from disk no longer works.
@@ -38,6 +39,8 @@ Controls: WASD/arrows move · Space swipe · E interact · J/K specials · T tre
 | `src/game/shop.js` | Shop panel |
 | `src/game/ui.js` | Dialogue, HUD, menus, map, title, cutscenes, ending |
 | `src/game/save.js` | Save/load to localStorage, autosave, checkpoints |
+| `src/game/cutscene.js` | Scripted scenes (finale reunion) |
+| `tests/playthrough.mjs` | Functional end-to-end playthrough (`npm test`) |
 | `src/game/main.js` | Boot, scaling, keyboard input, fixed-timestep game loop (60 updates/s) |
 
 Internal resolution: 256×192 (16×12 tiles), integer-scaled to the window.
@@ -58,4 +61,4 @@ Scripts are imported in order by `src/main.js` and still share globals (`G`, `En
 - **Desktop (Steam, itch app)**: wrap with Tauri (small) or Electron (Steamworks SDK easier via steamworks.js).
 - **Mobile (App Store, Google Play)**: wrap with Capacitor; requires touch controls first.
 
-See `CLAUDE.md` for the work plan.
+See `DESIGN.md` for the game/story plan and `CLAUDE.md` for conventions.

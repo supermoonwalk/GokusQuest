@@ -18,6 +18,7 @@
     e.hurtFlash = 0; e.moving = false; e.alive = (e.alive !== false);
     e.atkCD = 60; e.homeX = e.px; e.homeY = e.py; e.wanderA = Math.random() * 6.28;
     e.enraged = false; e.healed = false;
+    e.dormant = !!e.wake;            // bosses idle until the player enters their zone
   }
   function resetMap(map) {
     for (const e of (G.entities[map] || [])) {
@@ -27,6 +28,7 @@
       e.alive = true; e.dead = false;
       e.hp = e.maxHp; e.state = "roam"; e.stateT = 0; e.atkCD = 90;
       e.px = e.x * TS; e.py = e.y * TS;
+      e.dormant = !!e.wake; e.enraged = false;
       delete G.flags.defeated[e.id];
     }
   }
@@ -64,7 +66,9 @@
       c.t = (c.t || 0) + 1;
       if (c.t < 16) { c.px += c.vx; c.py += c.vy; c.vy += 0.18; }
     }
-    // fx tick
+    tickFX();
+  }
+  function tickFX() {
     for (const f of G.fx) { f.t++; }
     G.fx = G.fx.filter(f => f.t < f.life);
   }
@@ -76,6 +80,14 @@
     if (e.atkCD > 0) e.atkCD--;
     e.stateT++;
     e.moving = false;
+
+    // dormant boss: sit still until the player steps into the arena
+    if (e.dormant) {
+      faceVel(e, dx, dy);   // watches you approach
+      const tx = Math.floor(pc.x / TS), ty = Math.floor(pc.y / TS), z = e.wake;
+      if (tx >= z.x0 && tx <= z.x1 && ty >= z.y0 && ty <= z.y1) wakeBoss(e);
+      return;
+    }
 
     // boss phase tweaks
     if (e.vesper && !e.enraged && e.hp <= e.maxHp * 0.5) {
@@ -94,7 +106,6 @@
       if (dist < e.aggro) { e.state = "chase"; e.stateT = 0; }
     } else if (e.state === "chase") {
       faceVel(e, dx, dy);
-      if (e.boss && !e.vesper && G.quest === "fighting") Engine.setQuest("boss");
       if (dist > 14) {
         const sp = e.speed;
         Engine.moveEntity(e, dx / dist * sp, dy / dist * sp, mbox(e));
@@ -130,6 +141,31 @@
     const cd = Math.hypot(pc.x - (e.px + 8), pc.y - (e.py + 8));
     if (cd <= bodyGap(e) + 1 && G.player.iframes <= 0 && !G.player.dead) {
       hurtPlayer(e.touch);
+    }
+  }
+
+  function wakeBoss(e) {
+    e.dormant = false; e.state = "chase"; e.stateT = 0; e.atkCD = 70;
+    const met = G.flags.bossMet || (G.flags.bossMet = {});
+    const again = met[e.id]; met[e.id] = true;
+    if (!e.vesper) {
+      if (G.quest === "fighting") Engine.setQuest("boss");
+      const tom = () => UI.showDialogue("Tuxedo Tom", again
+        ? ["\"Back for another scratch, kid?\""]
+        : ["\"Well, well. Big brother came sniffing after all.\"",
+           "\"She's spoken for, kid. Turn around \u2014 or I'll send you home in pieces.\""]);
+      if (again) tom();
+      else UI.showDialogue("Chi Chi", ["*from inside a cage* GOKU! Over here!"], tom);
+    } else {
+      const freed = Engine.freedCount();
+      const vesper = () => UI.showDialogue("Madame Vesper", again
+        ? ["\"Persistent little stray. I do admire persistence... in a trophy.\""]
+        : [freed >= 5 ? "\"You emptied my cages. Every last one. Do you know how long that collection took me?\""
+                      : "\"Tom failed me. My shadows failed me. How tiresome.\"",
+           "\"No matter. Your sister stays \u2014 and you, little hero, will make a lovely new centrepiece.\""]);
+      if (again) vesper();
+      else UI.showDialogue(null, ["That lavender smell again \u2014 the same as the teacup in Chi Chi's cottage.",
+        "Madame Vesper rises from her throne."], vesper);
     }
   }
 
@@ -333,6 +369,12 @@
         const px = f.x - cam.x, py = f.y - cam.y;
         ctx.save(); ctx.fillStyle = "#8fe04a"; ctx.beginPath(); ctx.arc(px, py, 3.5, 0, 6.28); ctx.fill();
         ctx.fillStyle = "#cffaa0"; ctx.beginPath(); ctx.arc(px, py, 1.5, 0, 6.28); ctx.fill(); ctx.restore();
+      } else if (f.kind === "heart") {
+        // rises and fades; a small pixel heart
+        const a = 1 - f.t / f.life;
+        ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, a * 1.6));
+        Sprites.drawHeart(ctx, Math.round(f.x - cam.x), Math.round(f.y - cam.y - f.t * 0.35), 1, true);
+        ctx.restore();
       } else if (f.kind === "slamtext") {
         const a = 1 - f.t / f.life;
         ctx.save(); ctx.globalAlpha = Math.max(0, a);
@@ -355,6 +397,6 @@
   }
 
   window.Combat = {
-    initMonster, resetMap, update, playerAttack, useSpecial, renderFX, popText, propCanvas, gainChi,
+    initMonster, resetMap, update, tickFX, playerAttack, useSpecial, renderFX, popText, propCanvas, gainChi,
   };
 })();

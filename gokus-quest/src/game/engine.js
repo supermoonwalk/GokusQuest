@@ -22,7 +22,7 @@
     coins: 0,
     flags: { searched: false, deduced: false, defeated: {}, cluesSeen: {}, ribbon: false,
              kittens: {}, enteredManor: false, learnedSlam: false, shopMoved: false,
-             metShop: false, tomBeaten: false, intro: false },
+             metShop: false, tomBeaten: false, intro: false, bossMet: {} },
     quest: "start",
     keys: {},
     menu: null,                      // 'quest' | 'inventory'
@@ -55,12 +55,34 @@
         if (tileSolid(map, tx, ty)) return true;
     return false;
   }
+  /* solid entities: NPCs, chests, cages and the market stall block movement.
+     Returned as pixel rects (feet-level footprint, like the tile collision). */
+  const SOLID_TYPES = ["npc", "chest", "gear", "captive", "shop"];
+  function entityRect(e) {
+    if (e.gone || e.scripted) return null;                 // walking shopkeeper doesn't block
+    if ((e.type === "chest" || e.type === "gear") && e.taken) return null;
+    if (e.type === "captive" && !e.caged) return null;     // freed cats can be walked past
+    if (e.type === "shop") return { x: e.px - 7, y: e.py - 2, w: 30, h: 18 };   // stall counter
+    return { x: e.px + 2, y: e.py + 6, w: 12, h: 9 };
+  }
+  function boxHitsEntity(ent, bx, by, bw, bh) {
+    for (const e of (G.entities[G.cur] || [])) {
+      if (e === ent || !SOLID_TYPES.includes(e.type)) continue;
+      const r = entityRect(e); if (!r) continue;
+      if (bx < r.x + r.w && bx + bw > r.x && by < r.y + r.h && by + bh > r.y) return e;
+    }
+    return null;
+  }
   // move an entity along one axis, 1px at a time, stopping at walls
   function moveAxis(map, ent, dx, dy, box) {
     const steps = Math.ceil(Math.max(Math.abs(dx), Math.abs(dy)));
     const sx = dx / (steps || 1), sy = dy / (steps || 1);
     for (let i = 0; i < steps; i++) {
       const nx = ent.px + sx, ny = ent.py + sy;
+      // an entity you already overlap (e.g. spawned on it) never traps you
+      const inside = boxHitsEntity(ent, ent.px + box.ox, ent.py + box.oy, box.w, box.h);
+      const hitE = boxHitsEntity(ent, nx + box.ox, ny + box.oy, box.w, box.h);
+      if (hitE && hitE !== inside) break;
       if (!boxHitsSolid(map, nx + box.ox, ny + box.oy, box.w, box.h)) {
         ent.px = nx; ent.py = ny;
       } else break;
@@ -152,6 +174,7 @@
   /* -------------------- UPDATE -------------------- */
   function update() {
     G.frame++;
+    if (G.state === "cutscene" && G.scene) { Cutscene.update(); Combat.tickFX(); updateCamera(); return; }
     if (G.state !== "play") return;
     handleMovement();
     Combat.update();
@@ -280,7 +303,8 @@
           G.flags.deduced = true; setQuest("deduced");
           World.openForestGate(G);
           UI.showDialogue(null, ["QUEST UPDATED!",
-            "Tuxedo Tom took Chi Chi! The fallen log at the EAST edge of town has rolled aside. WHISKERWOOD is open.",
+            "Tuxedo Tom took Chi Chi! His gang hides in WHISKERWOOD, past the fallen log at the EAST edge of town.",
+            "Nothing will stop Goku now. He'll shove that log aside himself.",
             "Stock up at Whiskers' shop, then head into the woods. Swipe with SPACE to fight."]);
         }
       });
@@ -438,7 +462,7 @@
       updateCamera(); UI.updateHud();
       UI.showDialogue("", [
         "Everything goes dark... then Goku shakes it off. (A cat always lands on its feet.)",
-        "You wake safe back in town, coins still in your pocket. The woodland strays have crept back, though.",
+        "You wake safe back in town, coins still in your pocket. But every stray and thug you beat has crept back.",
         "Spend your coins, get stronger, and try again."]);
     }, 480);
   }
@@ -449,7 +473,7 @@
     G.flags.defeated[e.id] = true;
     if (e.coins) spawnCoins(e.px, e.py, e.coins);
 
-    if (e.vesper) { setQuest("done"); setTimeout(() => UI.showFinale(), 700); return; }
+    if (e.vesper) { setQuest("done"); Cutscene.finale(); return; }
     if (e.boss) {
       G.flags.tomBeaten = true;
       const cap = (G.entities.forest).find(x => x.id === "chichi");

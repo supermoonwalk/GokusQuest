@@ -302,8 +302,8 @@
     el("title").classList.remove("show");
     G.state = "play"; updateHud();
     showDialogue("Goku", [
-      "Chi Chi didn't come home last night.",
-      "My little sister... something's wrong. I have to find her.",
+      "Chi Chi didn't show up for breakfast. She NEVER misses fish day.",
+      "My little sister... something's wrong. I'd better check her cottage.",
       "(WASD/Arrows move \u00b7 SPACE swipe \u00b7 E interact \u00b7 J/K specials \u00b7 T treat \u00b7 M map)"
     ]);
   }
@@ -337,7 +337,7 @@
       updateHud();
       showDialogue("Goku", [
         "So many heavy doors... and so many cages.",
-        "Goku's eyes narrow. He rears back, spins on his paws \u2014 he KNOWS this one.",
+        "Goku remembers the game he and Chi Chi played as kittens: spin around, and SLAM the door shut. He KNOWS this one.",
         "NEW SPECIAL: 180 DOOR SLAM! Build CHI by swiping foes, then press " + key + " to unleash a spinning slam.",
         "(Reassign your specials any time at Whiskers' shop.) Free every kitten. Reach the throne. End the Cat Lady."
       ]);
@@ -364,28 +364,66 @@
   }
 
   /* -------------------- FINALE -------------------- */
+  // ending card: Goku, Chi Chi and the kittens walk home through a dawn meadow
+  let endAnim = null;
   function showFinale() {
     G.state = "ending";
     Save.clear();             // story complete: next boot starts fresh
     el("ending").classList.add("show");
-    el("ending-title").textContent = "DOMINION UNDONE";
+    el("ending-title").textContent = "HOME AT LAST";
     const freed = (Engine.freedCount ? Engine.freedCount() : 0);
     el("ending-text").innerHTML =
-      "Madame Vesper crumbles into the dark, her collar of keys clattering free. " +
-      "Every cage in the manor swings open at once.<br><br>" +
-      "Goku leads Chi Chi and <b>" + freed + " rescued kitten" + (freed === 1 ? "" : "s") +
-      "</b> out into the dawn. The dominion is empty; the meadow is full of purring.";
-    const cv = el("ending-cats");
-    if (cv) {
-      const cx = cv.getContext("2d"); cx.imageSmoothingEnabled = false;
-      cx.clearRect(0, 0, cv.width, cv.height);
-      Sprites.drawCat(cx, "goku", "right", 4, 26, { scale: 3 });
-      Sprites.drawCat(cx, "chichi", "right", 28, 28, { scale: 3 });
-      const kits = Sprites2.KITTEN_KINDS;
-      for (let i = 0; i < 5; i++) Sprites.drawCat(cx, kits[i % kits.length], "right", 52 + i * 20, 30, { scale: 2 });
-      Sprites.drawHeart(cx, 138, 18, 3, true);
-    }
+      "Madame Vesper is gone, and every lock in her manor gave way with her.<br>" +
+      "Goku leads Chi Chi and all five kittens out into the dawn" +
+      (freed > 0 ? " \u2014 <b>" + freed + "</b> of them freed by his own paws" : "") + ".<br>" +
+      "Tonight, the whole meadow will be purring.";
+    const cv = el("ending-cats"); if (!cv) return;
+    const cx = cv.getContext("2d"); cx.imageSmoothingEnabled = false;
+    const W = cv.width, H = cv.height, GROUND = H - 18;
+    const party = ["goku", "chichi"].concat(Sprites2.KITTEN_KINDS);
+    let f = 0;
+    cancelAnimationFrame(endAnim);
+    (function frame() {
+      if (G.state !== "ending") return;
+      f++;
+      // sky warms up over the first seconds
+      const k = Math.min(1, f / 240);
+      const sky = cx.createLinearGradient(0, 0, 0, GROUND);
+      sky.addColorStop(0, k < 0.5 ? "#4a3a52" : "#7a6a9a");
+      sky.addColorStop(1, k < 0.5 ? "#c98a9a" : "#f6c99a");
+      cx.fillStyle = sky; cx.fillRect(0, 0, W, GROUND);
+      // rising sun
+      const sunY = GROUND + 6 - k * 34;
+      cx.fillStyle = "#ffd98a"; cx.beginPath(); cx.arc(W - 46, sunY, 13, 0, 6.28); cx.fill();
+      cx.fillStyle = "#fff0c4"; cx.beginPath(); cx.arc(W - 46, sunY, 8, 0, 6.28); cx.fill();
+      // far hills (slow parallax)
+      cx.fillStyle = "#6a8a5a";
+      for (let i = -1; i < 5; i++) {
+        const hx = ((i * 64 - f * 0.15) % (W + 64) + W + 64) % (W + 64) - 32;
+        cx.beginPath(); cx.arc(hx, GROUND + 6, 30, Math.PI, 0); cx.fill();
+      }
+      // meadow + scrolling flowers
+      cx.fillStyle = "#7fb069"; cx.fillRect(0, GROUND, W, H - GROUND);
+      cx.fillStyle = "#6a9a58"; cx.fillRect(0, GROUND, W, 1);
+      for (let i = 0; i < 14; i++) {
+        const fx = ((i * 23 - f * 0.6) % W + W) % W, fy = GROUND + 4 + (i * 7) % 12;
+        cx.fillStyle = i % 3 ? "#f2c0d0" : "#ffe08a"; cx.fillRect(Math.round(fx), fy, 2, 2);
+      }
+      // the party walks right (in place, with a bob)
+      const XS = [118, 86, 66, 50, 34, 18, 2];          // Goku, Chi Chi, then the kittens
+      party.forEach((kind, i) => {
+        const x = XS[i], sc = i < 2 ? 2 : 1;
+        const bob = Math.floor((f + i * 7) / 8) % 2;
+        Sprites.drawCat(cx, kind, "right", x, GROUND - 16 * sc + 2, { scale: sc, bob: -bob });
+      });
+      // hearts drifting up from the pair
+      if (f % 50 === 0 || f === 1) heartsEnd.push({ x: 112 + Math.random() * 12, y: GROUND - 36, t: 0 });
+      for (const h of heartsEnd) { h.t++; Sprites.drawHeart(cx, Math.round(h.x), Math.round(h.y - h.t * 0.3), 1, true); }
+      heartsEnd = heartsEnd.filter(h => h.t < 90);
+      endAnim = requestAnimationFrame(frame);
+    })();
   }
+  let heartsEnd = [];
 
   window.UI = {
     showDialogue, advanceDialogue, updateHud,

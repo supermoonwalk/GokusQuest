@@ -135,7 +135,8 @@
         { type: "monster", id: "f3", mon: "mouser",  x: 14, y: 10, dir: "left", alive: true },
         { type: "monster", id: "f4", mon: "shade",   x: 18, y: 9,  dir: "left", alive: true },
         { type: "monster", id: "f5", mon: "hex",     x: 20, y: 7,  dir: "left", alive: true },
-        { type: "monster", id: "boss", mon: "boss",  x: 24, y: 9,  dir: "left", alive: true, boss: true },
+        { type: "monster", id: "boss", mon: "boss",  x: 24, y: 9,  dir: "left", alive: true, boss: true,
+          wake: { x0: 20, y0: 0, x1: 27, y1: 17 } },   // waits in his clearing
         { type: "captive", id: "chichi", kind: "chichi", x: 24, y: 7, dir: "down", caged: true },
         { type: "chest", id: "c_fork", x: 6, y: 3, coins: 14 },
         { type: "chest", id: "c_deep", x: 26, y: 2, coins: 20 },
@@ -148,7 +149,7 @@
       interior: [
         { type: "clue", id: "bed", x: 1, y: 1, text: ["Chi Chi's little bed, blanket still rumpled.", "She was curled up here not long ago."] },
         { type: "clue", id: "shelf1", x: 3, y: 1, text: ["A shelf of books: knitting, and fish recipes.", "Very Chi Chi."] },
-        { type: "clue", id: "table", x: 3, y: 3, text: ["Two teacups. One tipped over, tea barely dry.", "Chi Chi had a visitor."] },
+        { type: "clue", id: "table", x: 3, y: 3, text: ["Two teacups. One tipped over, tea barely dry.", "A heavy whiff of lavender perfume hangs over the second cup.", "Chi Chi had a visitor. A fancy one."] },
         { type: "clue", id: "chairTip", x: 3, y: 5, text: ["A chair knocked clean over.", "Someone left in a hurry \u2014 or was dragged."] },
         { type: "clue", id: "vase", x: 8, y: 5, text: ["Chi Chi's favorite vase, smashed on the floor.", "There was a struggle here."] },
         { type: "clue", id: "claw", x: 11, y: 3, text: ["Deep claw marks gouged across the wall.", "Too big to be Chi Chi's."] },

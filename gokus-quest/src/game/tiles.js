@@ -178,8 +178,17 @@
 
   /* ---------- HOUSE EXTERIOR (3 wide x 3 tall) ---------- */
   const ROOF = { o:"#7a3b3b", a:"#b35a4f", b:"#c97a6a", h:"#e0a193" };
+  // lower half of a roof tile: the top of the wall under the eave, so the
+  // roof row meets the wall row below without a strip of grass between them
+  function eave(ctx, side) {
+    px(ctx, "#d8b489", 0, 9, 16, 7);          // wall plaster
+    px(ctx, "#9c7b4d", 0, 9, 16, 2);          // shadow cast by the roof
+    px(ctx, "#b08a55", 0, 11, 16, 1);
+    if (side === "L") px(ctx, "#6b4a2c", 0, 9, 1, 7);
+    if (side === "R") px(ctx, "#6b4a2c", 15, 9, 1, 7);
+  }
   reg("roofL", true, (ctx) => {
-    px(ctx, "#9c7b4d", 0, 12, 16, 4); // wall top peeking
+    eave(ctx, "L");
     const rows = [
       "............oooo",
       ".........oooaaaa",
@@ -201,6 +210,7 @@
     paint(ctx, rows, ROOF);
   });
   reg("roofM", true, (ctx) => {
+    eave(ctx, "M");
     const rows = [
       "................",
       "................",
@@ -222,6 +232,7 @@
     paint(ctx, rows, ROOF);
   });
   reg("roofR", true, (ctx) => {
+    eave(ctx, "R");
     const rows = [
       "oooo............",
       "aaaaooo.........",
