@@ -57,6 +57,8 @@
       if (e.hurtFlash > 0) e.hurtFlash--;
       updateMonster(e, pc);
     }
+    separateBodies();
+    updateHexes();
     // coin drop physics
     for (const c of G.coinDrops) {
       c.t = (c.t || 0) + 1;
@@ -92,6 +94,7 @@
       if (dist < e.aggro) { e.state = "chase"; e.stateT = 0; }
     } else if (e.state === "chase") {
       faceVel(e, dx, dy);
+      if (e.boss && !e.vesper && G.quest === "fighting") Engine.setQuest("boss");
       if (dist > 14) {
         const sp = e.speed;
         Engine.moveEntity(e, dx / dist * sp, dy / dist * sp, mbox(e));
@@ -116,25 +119,75 @@
       const sp = (e.big ? 2.0 : 2.6);
       Engine.moveEntity(e, e.lx * sp, e.ly * sp, mbox(e));
       e.moving = true;
-      if (e.stateT > 10) { e.state = "recover"; e.stateT = 0; e.atkCD = e.big ? 55 : 42; }
+      // a lunge ends on contact instead of carrying through the player
+      const touching = Math.hypot(pc.x - (e.px + 8), pc.y - (e.py + 8)) <= bodyGap(e) + 1;
+      if (touching || e.stateT > 10) { e.state = "recover"; e.stateT = 0; e.atkCD = e.big ? 55 : 42; }
     } else if (e.state === "recover") {
       if (e.stateT > (e.big ? 30 : 20)) { e.state = dist < e.aggro ? "chase" : "roam"; e.stateT = 0; }
     }
 
-    // contact damage to player
-    if (overlap(e, G.player, 11) && G.player.iframes <= 0 && !G.player.dead) {
+    // contact damage to player (bodies never overlap, so test against the touching distance)
+    const cd = Math.hypot(pc.x - (e.px + 8), pc.y - (e.py + 8));
+    if (cd <= bodyGap(e) + 1 && G.player.iframes <= 0 && !G.player.dead) {
       hurtPlayer(e.touch);
     }
   }
 
   function mbox(e) { return { ox: 3, oy: 6, w: 10, h: 9 }; }
+
+  /* -------------------- body separation -------------------- */
+  // closest the centres of a monster and the player may get
+  function bodyGap(e) { return e.big ? 15 : 12; }
+  // push overlapping bodies apart: monsters vs player, and monsters vs each other.
+  // moves go through moveEntity, so nobody is shoved into a wall; if a monster is
+  // pinned, the player takes the remaining push instead.
+  function separateBodies() {
+    const p = G.player;
+    const mons = (G.entities[G.cur] || []).filter(e => e.type === "monster" && e.alive);
+    for (const e of mons) {
+      if (p.dead) break;
+      const pc = Engine.centerOf(p);
+      let dx = (e.px + 8) - pc.x, dy = (e.py + 8) - pc.y;
+      let d = Math.hypot(dx, dy);
+      const gap = bodyGap(e);
+      if (d >= gap) continue;
+      if (d < 0.01) { dx = p.dir === "left" ? -1 : 1; dy = 0; d = 1; }   // exactly stacked
+      const push = gap - d, nx = dx / d, ny = dy / d;
+      const ox = e.px, oy = e.py;
+      Engine.moveEntity(e, nx * push, ny * push, mbox(e));
+      const moved = (e.px - ox) * nx + (e.py - oy) * ny;
+      const rest = push - moved;
+      if (rest > 0.05) Engine.moveEntity(p, -nx * rest, -ny * rest, Engine.PBOX);
+    }
+    for (let i = 0; i < mons.length; i++) for (let j = i + 1; j < mons.length; j++) {
+      const a = mons[i], b = mons[j];
+      let dx = b.px - a.px, dy = b.py - a.py, d = Math.hypot(dx, dy);
+      const gap = (a.big || b.big) ? 14 : 11;
+      if (d >= gap) continue;
+      if (d < 0.01) { dx = 1; dy = 0; d = 1; }
+      const half = (gap - d) / 2, nx = dx / d, ny = dy / d;
+      Engine.moveEntity(a, -nx * half, -ny * half, mbox(a));
+      Engine.moveEntity(b, nx * half, ny * half, mbox(b));
+    }
+  }
+
+  /* -------------------- Vesper's hex bolts -------------------- */
+  // simulated here (not in renderFX) so they freeze with the game and stop at walls
+  function updateHexes() {
+    const p = G.player, map = G.maps[G.cur];
+    for (const f of G.fx) {
+      if (f.kind !== "hex") continue;
+      f.x += f.vx; f.y += f.vy;
+      if (Engine.tileSolid(map, Math.floor(f.x / TS), Math.floor(f.y / TS))) { f.t = f.life; continue; }
+      if (!p.dead && p.iframes <= 0 && Math.hypot(f.x - (p.px + 8), f.y - (p.py + 8)) < 8) {
+        hurtPlayer(f.dmg); f.t = f.life;
+      }
+    }
+  }
   function faceVel(e, vx, vy) {
     if (!vx && !vy) return;
     if (Math.abs(vx) > Math.abs(vy)) e.dir = vx < 0 ? "left" : "right";
     else e.dir = vy < 0 ? "up" : "down";
-  }
-  function overlap(a, b, pad) {
-    return Math.abs((a.px) - (b.px)) < pad && Math.abs((a.py) - (b.py)) < pad;
   }
 
   /* -------------------- player offense -------------------- */
@@ -227,7 +280,7 @@
         const a = Math.atan2(ec.y - c.y, ec.x - c.x);
         Engine.moveEntity(e, Math.cos(a) * 12, Math.sin(a) * 12, mbox(e));
         e.state = "recover"; e.stateT = 0; e.atkCD = 40;
-        if (e.hp <= 0) Engine.onMonsterDefeated(e);
+        if (e.hp <= 0) { Engine.onMonsterDefeated(e); G.fx.push({ kind: "poof", x: e.px + 8, y: e.py + 8, t: 0, life: 14 }); }
       }
     }
   }
@@ -275,11 +328,6 @@
         ctx.save(); ctx.globalAlpha = 0.5 * (1 - f.t / f.life); ctx.strokeStyle = "#cfeaff"; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(f.x - cam.x, f.y - cam.y); ctx.lineTo(f.x - cam.x - 14, f.y - cam.y); ctx.stroke(); ctx.restore();
       } else if (f.kind === "hex") {
-        f.x += f.vx; f.y += f.vy;
-        // hit player?
-        if (Math.hypot(f.x - (G.player.px + 8), f.y - (G.player.py + 8)) < 8 && G.player.iframes <= 0) {
-          hurtPlayer(f.dmg); f.t = f.life;
-        }
         const px = f.x - cam.x, py = f.y - cam.y;
         ctx.save(); ctx.fillStyle = "#8fe04a"; ctx.beginPath(); ctx.arc(px, py, 3.5, 0, 6.28); ctx.fill();
         ctx.fillStyle = "#cffaa0"; ctx.beginPath(); ctx.arc(px, py, 1.5, 0, 6.28); ctx.fill(); ctx.restore();

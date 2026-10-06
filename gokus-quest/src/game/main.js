@@ -22,7 +22,9 @@
 
   function useTreat() {
     const p = G.player;
-    if (G.treats <= 0 || p.hp >= p.maxHp || p.dead) return;
+    if (p.dead) return;
+    if (G.treats <= 0) { Combat.popText(p.px - 4, p.py - 2, "NO TREATS", "#ffb0b0"); return; }
+    if (p.hp >= p.maxHp) { Combat.popText(p.px - 2, p.py - 2, "HP FULL", "#cfeaff"); return; }
     G.treats--;
     const heal = Math.min(14, p.maxHp - p.hp);
     p.hp += heal;
