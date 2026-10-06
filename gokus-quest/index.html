@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Goku's Quest — The Search for Chi Chi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Pixelify+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#3b2f25; --ink2:#5a4636;
+    --parch:#f6e7c4; --parch2:#fbf2da; --parchEdge:#e6d2a3;
+    --accent:#c96d6d; --good:#5fb85f; --gold:#e0b54a; --coin:#f0c64a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{ background:#1d1822; font-family:'Pixelify Sans',sans-serif; overflow:hidden; color:var(--ink); -webkit-font-smoothing:none; }
+  #stage{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(circle at 50% 40%, #2b2436 0%, #1a1622 80%); }
+  #viewport{ position:relative; container-type:size; box-shadow:0 0 0 4px #120f18, 0 18px 50px rgba(0,0,0,.6); image-rendering:pixelated; }
+  canvas{ image-rendering:pixelated; display:block; }
+  #game{ position:absolute; inset:0; width:100%; height:100%; background:#3a5a40; }
+
+  .panel{ background:var(--parch); border:0.7cqmin solid var(--ink);
+    box-shadow: inset 0 0 0 0.7cqmin var(--parch2), inset 0 0 0 1.4cqmin var(--parchEdge), 0 0.6cqmin 0 rgba(0,0,0,.25);
+    image-rendering:pixelated; }
+
+  /* ---------- compact HUD ---------- */
+  #hud-tl{ position:absolute; top:2cqmin; left:2cqmin; z-index:6; display:flex; align-items:center; gap:1.4cqmin;
+    padding:1.2cqmin 1.6cqmin; }
+  .stat-stack{ display:flex; flex-direction:column; gap:.7cqmin; }
+  .hud-label{ font-family:'Press Start 2P',monospace; font-size:1.5cqmin; color:var(--ink2); }
+  .bar-row{ display:flex; align-items:center; gap:.8cqmin; }
+  .hp-track{ width:22cqmin; height:2.4cqmin; background:#7a4a4a; border:0.45cqmin solid var(--ink); }
+  .hp-fill{ height:100%; background:var(--good); transition:width .2s ease; }
+  .chi-track{ width:18cqmin; height:1.6cqmin; background:#1f3346; border:0.45cqmin solid var(--ink); }
+  .chi-fill{ height:100%; width:0%; background:#2bbfd6; transition:width .2s ease; }
+  #hud-hp-text{ font-family:'Press Start 2P',monospace; font-size:1.5cqmin; color:var(--ink); }
+  .chip{ display:flex; align-items:center; gap:.7cqmin; font-family:'Press Start 2P',monospace; font-size:1.8cqmin; color:var(--ink); }
+  .coin-i{ display:inline-block; width:2.4cqmin; height:2.4cqmin; border-radius:50%;
+    background:radial-gradient(circle at 38% 34%, #fff0b4 0 30%, var(--coin) 31% 70%, #b9892f 71% 100%);
+    border:0.35cqmin solid var(--ink); }
+  .fish{ width:2.6cqmin; height:2.6cqmin; background:radial-gradient(circle at 60% 40%, #f0d28a 0 40%, #d8a85a 41% 100%);
+    border:0.35cqmin solid var(--ink); border-radius:40% 60% 50% 50%; }
+
+  /* top-right: specials + buttons */
+  #hud-tr{ position:absolute; top:2cqmin; right:2cqmin; z-index:6; display:flex; flex-direction:column; align-items:flex-end; gap:1.2cqmin; }
+  .slots{ display:flex; gap:1cqmin; }
+  .slot{ position:relative; width:7cqmin; height:7cqmin; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:var(--parch); border:0.6cqmin solid var(--ink); box-shadow:inset 0 0 0 0.6cqmin var(--parch2); }
+  .slot .slot-key{ position:absolute; top:-1.2cqmin; left:-1.2cqmin; font-family:'Press Start 2P',monospace; font-size:1.4cqmin;
+    background:var(--ink2); color:#fff; padding:.4cqmin .6cqmin; border:0.4cqmin solid var(--ink); }
+  .slot .slot-glyph{ font-size:3.4cqmin; line-height:1; color:var(--ink2); }
+  .slot .slot-cost{ font-family:'Press Start 2P',monospace; font-size:1.3cqmin; color:#2b8fb0; margin-top:.3cqmin; }
+  .slot.empty{ opacity:.5; }
+  .slot.ready{ box-shadow:inset 0 0 0 0.6cqmin var(--parch2), 0 0 2.4cqmin rgba(43,191,214,.8); }
+  .slot.ready .slot-glyph{ color:#1f7fa0; }
+  .hud-btns{ display:flex; gap:.8cqmin; }
+  .hudbtn{ cursor:pointer; font-family:'Press Start 2P',monospace; font-size:1.6cqmin; color:var(--ink);
+    background:var(--parch); border:0.5cqmin solid var(--ink); padding:1cqmin 1.2cqmin; box-shadow:inset 0 0 0 0.5cqmin var(--parch2); }
+  .hudbtn:hover{ background:#fff; }
+
+  /* ---------- dialogue ---------- */
+  #dialogue{ position:absolute; left:3cqmin; right:3cqmin; bottom:3cqmin; padding:3cqmin 3.4cqmin 3.4cqmin; z-index:9;
+    display:none; cursor:pointer; min-height:18cqmin; }
+  #dialogue.show{ display:block; }
+  #d-name{ position:absolute; top:-3.2cqmin; left:3cqmin; font-family:'Press Start 2P',monospace; font-size:2.4cqmin;
+    color:#fff; background:var(--ink2); padding:1.2cqmin 1.8cqmin; border:0.6cqmin solid var(--ink); }
+  #d-text{ font-size:4.2cqmin; line-height:1.4; font-weight:500; color:var(--ink); min-height:8cqmin; text-wrap:pretty; }
+  #d-next{ position:absolute; right:3cqmin; bottom:2cqmin; font-family:'Press Start 2P',monospace; font-size:2.6cqmin;
+    color:var(--accent); animation:bob 0.7s steps(2) infinite; }
+  @keyframes bob{ 50%{ transform:translateY(-0.8cqmin);} }
+
+  /* ---------- center panels ---------- */
+  .center-panel{ position:absolute; inset:0; display:none; align-items:center; justify-content:center; z-index:10; background:rgba(20,16,26,.5); }
+  .center-panel.show{ display:flex; }
+  .center-panel .box{ width:80%; max-height:88%; overflow:auto; padding:3.4cqmin; position:relative; }
+  .center-panel h2{ font-family:'Press Start 2P',monospace; font-size:3cqmin; color:var(--accent); margin-bottom:2cqmin; }
+  .panel-close{ position:absolute; top:2cqmin; right:2cqmin; cursor:pointer; font-family:'Press Start 2P',monospace;
+    font-size:2.2cqmin; background:var(--accent); color:#fff; border:0.5cqmin solid var(--ink); padding:1cqmin 1.5cqmin; z-index:2; }
+  #quest-current{ font-size:3.6cqmin; font-weight:600; margin-bottom:2.4cqmin; padding:2cqmin; background:var(--parch2); border:0.5cqmin dashed var(--ink2); }
+  .quest-item{ font-size:3.2cqmin; padding:1.2cqmin 0; border-bottom:0.3cqmin dotted var(--parchEdge); }
+  .quest-item.done{ color:#8a7a5a; } .quest-item.active{ color:var(--ink); font-weight:700; }
+
+  /* inventory */
+  #inv-stats{ font-family:'Press Start 2P',monospace; font-size:2cqmin; color:var(--ink2); background:var(--parch2);
+    border:0.5cqmin dashed var(--ink2); padding:1.6cqmin; margin-bottom:2cqmin; line-height:1.7; }
+  #inv-stats b{ color:var(--accent); }
+  #inv-equip{ display:grid; grid-template-columns:repeat(3,1fr); gap:1.4cqmin; margin-bottom:2.4cqmin; }
+  .eq-cell{ display:flex; align-items:center; gap:1.4cqmin; padding:1.4cqmin; background:var(--parch2); border:0.5cqmin solid var(--parchEdge); }
+  .eq-cell.empty{ opacity:.6; }
+  .eq-icon{ width:6cqmin; height:6cqmin; image-rendering:pixelated; background:#efe0bd; border:0.4cqmin solid var(--parchEdge); }
+  .eq-txt{ display:flex; flex-direction:column; font-family:'Press Start 2P',monospace; font-size:1.7cqmin; gap:.5cqmin; }
+  .eq-txt small{ font-family:'Pixelify Sans'; font-size:2.6cqmin; color:var(--ink2); }
+  .eq-txt .dim{ color:#9a8c72; text-transform:capitalize; }
+  #inv-grid{ display:flex; flex-direction:column; gap:1.6cqmin; }
+  .inv-cell{ display:grid; grid-template-columns:auto 1fr; grid-template-rows:auto auto; gap:.4cqmin 2.4cqmin; padding:1.8cqmin;
+    background:var(--parch2); border:0.5cqmin solid var(--parchEdge); align-items:center; }
+  .inv-icon{ width:8cqmin; height:8cqmin; grid-row:1 / span 2; image-rendering:pixelated; background:#efe0bd; border:0.4cqmin solid var(--parchEdge); }
+  .inv-name{ font-family:'Press Start 2P',monospace; font-size:2.4cqmin; color:var(--ink); align-self:end; }
+  .inv-desc{ font-size:3cqmin; color:var(--ink2); align-self:start; }
+
+  /* ---------- SHOP ---------- */
+  #shop-panel .box{ width:84%; }
+  .shop-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:2cqmin; }
+  .shop-head h2{ margin:0; }
+  .shop-purse{ font-family:'Press Start 2P',monospace; font-size:2.6cqmin; color:var(--ink); display:flex; align-items:center; gap:1cqmin; }
+  .shop-sec-title{ font-family:'Press Start 2P',monospace; font-size:2cqmin; color:var(--ink2); margin:2cqmin 0 1cqmin; border-bottom:0.4cqmin solid var(--parchEdge); padding-bottom:.8cqmin; }
+  .shop-row{ display:flex; align-items:center; justify-content:space-between; gap:1.6cqmin; padding:1.3cqmin 1.6cqmin;
+    background:var(--parch2); border:0.5cqmin solid var(--parchEdge); margin-bottom:1cqmin; }
+  .shop-row-main{ display:flex; flex-direction:column; gap:.4cqmin; flex:1 1 auto; }
+  .shop-name{ font-family:'Press Start 2P',monospace; font-size:2cqmin; color:var(--ink); }
+  .shop-desc{ font-size:2.8cqmin; color:var(--ink2); }
+  .lvpips{ display:flex; gap:.5cqmin; }
+  .lvpip{ width:1.6cqmin; height:1.6cqmin; background:#d8c39a; border:0.35cqmin solid var(--ink2); }
+  .lvpip.on{ background:var(--good); }
+  .shop-buy{ cursor:pointer; font-family:'Press Start 2P',monospace; font-size:1.8cqmin; color:#fff; background:var(--ink2);
+    border:0.5cqmin solid var(--ink); padding:1.2cqmin 1.4cqmin; white-space:nowrap; display:flex; align-items:center; gap:.7cqmin; }
+  .shop-buy:hover{ filter:brightness(1.1); }
+  .shop-buy.broke{ background:#9a93a0; cursor:default; opacity:.7; }
+  .shop-buy.maxed{ background:var(--good); cursor:default; }
+  .shop-buy.sell{ background:#b06a3a; }
+  .slot-toggles, .gear-acts{ display:flex; gap:.8cqmin; }
+  .slot-btn{ cursor:pointer; font-family:'Press Start 2P',monospace; font-size:1.7cqmin; color:var(--ink);
+    background:var(--parch); border:0.5cqmin solid var(--ink); padding:1cqmin 1.2cqmin; }
+  .slot-btn.on{ background:var(--good); color:#fff; }
+  .shop-row.gear .gear-left{ display:flex; align-items:center; gap:1.4cqmin; flex:1 1 auto; }
+  .shop-gicon{ width:6cqmin; height:6cqmin; image-rendering:pixelated; background:#efe0bd; border:0.4cqmin solid var(--parchEdge); }
+  .shop-empty{ font-size:3cqmin; color:var(--ink2); padding:2cqmin; text-align:center; }
+
+  /* ---------- full-screen map ---------- */
+  #map-overlay{ position:absolute; inset:0; display:none; align-items:center; justify-content:center; z-index:11; background:rgba(16,12,22,.82); }
+  #map-overlay.show{ display:flex; }
+  #map-overlay .box{ padding:3cqmin; position:relative; display:flex; flex-direction:column; align-items:center; gap:1.6cqmin; }
+  #map-overlay h2{ font-family:'Press Start 2P',monospace; font-size:2.8cqmin; color:var(--accent); }
+  #bigmap{ width:74cqmin; height:56cqmin; image-rendering:pixelated; background:#1d1726; border:0.6cqmin solid var(--ink); }
+  #map-hint{ font-size:2.8cqmin; color:var(--ink2); }
+
+  /* ---------- fade ---------- */
+  #fade{ position:absolute; inset:0; background:#1a1320; opacity:0; pointer-events:none; z-index:20; }
+  #fade.anim{ animation:fadeflash .48s ease; }
+  @keyframes fadeflash{ 0%{opacity:0;} 35%{opacity:1;} 100%{opacity:0;} }
+
+  /* ---------- overlays (title/ending/chapter) ---------- */
+  .overlay{ position:absolute; inset:0; z-index:30; display:none; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; gap:2cqmin; }
+  .overlay.show{ display:flex; }
+  #title{ background:linear-gradient(180deg,#b7dcc0 0%, #9ccf9f 45%, #7fb069 100%); }
+  #title .vignette{ position:absolute; inset:0; box-shadow:inset 0 0 30cqmin rgba(40,60,40,.5); pointer-events:none; }
+  #title-cat{ width:26cqmin; height:26cqmin; image-rendering:pixelated; margin-bottom:1cqmin; filter:drop-shadow(0 1cqmin 0 rgba(0,0,0,.2)); }
+  #title h1{ font-family:'Press Start 2P',monospace; font-size:8cqmin; color:#fff; line-height:1.25;
+    text-shadow:0.8cqmin 0.8cqmin 0 #c96d6d, 1.6cqmin 1.6cqmin 0 rgba(0,0,0,.25); }
+  #title .sub{ font-family:'Press Start 2P',monospace; font-size:3cqmin; color:#3b2f25; background:#f6e7c4;
+    padding:1.4cqmin 2.4cqmin; border:0.6cqmin solid var(--ink); margin-top:1cqmin; }
+  #title .press{ margin-top:3cqmin; font-family:'Press Start 2P',monospace; font-size:2.8cqmin; color:#fff; animation:blink 1s steps(2) infinite; }
+  #title .ctrls{ font-family:'Pixelify Sans'; font-size:3cqmin; color:#2f4a32; margin-top:.5cqmin; font-weight:600; max-width:80%; }
+  @keyframes blink{ 50%{opacity:.15;} }
+
+  #ending{ background:linear-gradient(180deg,#2b2436 0%, #4a3a52 60%, #c98a9a 100%); }
+  #ending-cats{ width:64cqmin; height:30cqmin; image-rendering:pixelated; }
+  #ending h1{ font-family:'Press Start 2P',monospace; font-size:7cqmin; color:#fff; text-shadow:0.8cqmin 0.8cqmin 0 #c96d6d; }
+  #ending p{ font-size:4cqmin; color:#fff; max-width:80%; font-weight:600; line-height:1.4; }
+  #ending .press{ margin-top:2cqmin; font-family:'Press Start 2P',monospace; font-size:2.6cqmin; color:#fff; animation:blink 1s steps(2) infinite; }
+
+  #chapter2{ background:linear-gradient(180deg,#190f26 0%, #2a1838 55%, #46243f 100%); }
+  #ch2-art{ width:30cqmin; height:30cqmin; image-rendering:pixelated; filter:drop-shadow(0 1cqmin 0 rgba(0,0,0,.4)); margin-bottom:.5cqmin; }
+  .ch2-h1{ font-family:'Press Start 2P',monospace; font-size:7cqmin; color:#f0e6f6;
+    text-shadow:0.8cqmin 0.8cqmin 0 #8a3aa0, 1.6cqmin 1.6cqmin 0 rgba(0,0,0,.3); }
+  .ch2-sub{ font-family:'Press Start 2P',monospace; font-size:3cqmin; color:#3b2f25; background:#e8c34a;
+    padding:1.4cqmin 2.4cqmin; border:0.6cqmin solid var(--ink); margin-top:1.5cqmin; }
+  .ch2-body{ font-size:3.4cqmin; color:#e6d8ee; max-width:74%; margin-top:2.4cqmin; line-height:1.55; font-weight:500; text-wrap:pretty; }
+</style>
+</head>
+<body>
+  <div id="stage">
+    <div id="viewport">
+      <canvas id="game"></canvas>
+
+      <!-- compact HUD: top-left stats -->
+      <div id="hud-tl" class="panel">
+        <div class="stat-stack">
+          <span class="hud-label">GOKU</span>
+          <div class="bar-row">
+            <div class="hp-track"><div id="hud-hp-bar" class="hp-fill" style="width:100%"></div></div>
+            <span id="hud-hp-text">30/30</span>
+          </div>
+          <div class="chi-track"><div id="hud-chi-bar" class="chi-fill"></div></div>
+        </div>
+        <span class="chip"><span class="coin-i"></span><span id="hud-coins">0</span></span>
+        <span class="chip"><span class="fish"></span><span id="hud-treats">3</span></span>
+      </div>
+
+      <!-- top-right: specials + buttons -->
+      <div id="hud-tr">
+        <div class="slots">
+          <div id="slot-0" class="slot empty"><span class="slot-key">J</span><span class="slot-glyph">–</span><span class="slot-cost"></span></div>
+          <div id="slot-1" class="slot empty"><span class="slot-key">K</span><span class="slot-glyph">–</span><span class="slot-cost"></span></div>
+        </div>
+        <div class="hud-btns">
+          <button id="btn-quest" class="hudbtn">Q</button>
+          <button id="btn-bag" class="hudbtn">BAG</button>
+          <button id="btn-map" class="hudbtn">MAP</button>
+        </div>
+      </div>
+
+      <!-- dialogue -->
+      <div id="dialogue" class="panel">
+        <span id="d-name">Goku</span>
+        <div id="d-text"></div>
+        <span id="d-next">&#9658;</span>
+      </div>
+
+      <!-- quest panel -->
+      <div id="quest-panel" class="center-panel">
+        <div class="box panel">
+          <button class="panel-close">X</button>
+          <h2 id="quest-title">Quest</h2>
+          <div id="quest-current"></div>
+          <div id="quest-log"></div>
+        </div>
+      </div>
+
+      <!-- inventory panel -->
+      <div id="inv-panel" class="center-panel">
+        <div class="box panel">
+          <button class="panel-close">X</button>
+          <h2>Satchel</h2>
+          <div id="inv-stats"></div>
+          <div class="shop-sec-title">Equipped Gear</div>
+          <div id="inv-equip"></div>
+          <div class="shop-sec-title">Items</div>
+          <div id="inv-grid"></div>
+        </div>
+      </div>
+
+      <!-- shop panel -->
+      <div id="shop-panel" class="center-panel">
+        <div class="box panel">
+          <button class="panel-close">X</button>
+          <div class="shop-head" style="justify-content: space-around">
+            <h2>Whiskers' Market</h2>
+            <span class="shop-purse" style="align-items: center; justify-content: flex-start; flex-direction: row; text-align: center; letter-spacing: 0px; font-weight: 400"><span class="coin-i" style="text-align: center; background-position: center center; background-size: cover"></span><span id="shop-coins" style="text-align: center">0</span></span>
+          </div>
+          <div class="shop-sec-title">Train Your Stats</div>
+          <div id="shop-stats"></div>
+          <div class="shop-sec-title">Special Moves</div>
+          <div id="shop-specials"></div>
+          <div class="shop-sec-title">Supplies</div>
+          <div id="shop-items"></div>
+          <div class="shop-sec-title">Your Gear (equip / sell)</div>
+          <div id="shop-gear"></div>
+        </div>
+      </div>
+
+      <!-- full-screen map -->
+      <div id="map-overlay">
+        <div class="box panel">
+          <button class="panel-close">X</button>
+          <h2>Map</h2>
+          <canvas id="bigmap" width="296" height="224"></canvas>
+          <div id="map-hint">Press M or Esc to close</div>
+        </div>
+      </div>
+
+      <!-- fade -->
+      <div id="fade"></div>
+
+      <!-- title -->
+      <div id="title" class="overlay show">
+        <div class="vignette"></div>
+        <canvas id="title-cat" width="96" height="96"></canvas>
+        <h1>GOKU'S QUEST</h1>
+        <div class="sub">The Search for Chi Chi</div>
+        <div class="press">&#9658; PRESS ENTER &#9668;</div>
+        <div class="ctrls">WASD / Arrows move &nbsp;&bull;&nbsp; SPACE swipe &nbsp;&bull;&nbsp; E interact &nbsp;&bull;&nbsp; J / K specials &nbsp;&bull;&nbsp; T treat &nbsp;&bull;&nbsp; M map</div>
+      </div>
+
+      <!-- ending -->
+      <div id="ending" class="overlay">
+        <canvas id="ending-cats" width="160" height="80"></canvas>
+        <h1 id="ending-title">DOMINION UNDONE</h1>
+        <p id="ending-text"></p>
+        <p style="font-size:5cqmin;color:#ffe;">&#9829; The End &#9829;</p>
+        <div class="press">Press ENTER to play again</div>
+      </div>
+
+      <!-- chapter II card -->
+      <div id="chapter2" class="overlay">
+        <div class="vignette"></div>
+        <canvas id="ch2-art" width="112" height="112"></canvas>
+        <h1 class="ch2-h1">CHAPTER II</h1>
+        <div class="ch2-sub">The Cat Lady's Dominion</div>
+        <div class="ch2-body">A cold manor swallows the path east. Inside, Madame Vesper hoards her stolen kittens — and Chi Chi. Free them all.</div>
+        <div class="press">&#9658; PRESS ENTER &#9668;</div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="src/game/sprites.js"></script>
+  <script src="src/game/sprites2.js"></script>
+  <script src="src/game/tiles.js"></script>
+  <script src="src/game/tiles2.js"></script>
+  <script src="src/game/tiles3.js"></script>
+  <script src="src/game/world.js"></script>
+  <script src="src/game/world2.js"></script>
+  <script src="src/game/engine.js"></script>
+  <script src="src/game/render.js"></script>
+  <script src="src/game/combat.js"></script>
+  <script src="src/game/shop.js"></script>
+  <script src="src/game/ui.js"></script>
+  <script src="src/game/main.js"></script>
+</body>
+</html>
