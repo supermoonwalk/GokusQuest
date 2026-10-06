@@ -55,7 +55,7 @@
     for (const m of ents) if (m.type === "monster" && m.alive) {
       m.alive = false; m.dead = true; poof(m.px + 8, m.py + 8);
     }
-    p.atkTimer = 0; p.spin = 0; p.moving = false; G.keys = {};
+    p.atkTimer = 0; p.spin = 0; p.moving = false; p.iframes = 0; p.hurtFlash = 0; G.keys = {};
 
     const list = [
       wait(45),
