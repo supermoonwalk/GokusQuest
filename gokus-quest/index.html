@@ -100,6 +100,8 @@
   .inv-icon{ width:8cqmin; height:8cqmin; grid-row:1 / span 2; image-rendering:pixelated; background:#efe0bd; border:0.4cqmin solid var(--parchEdge); }
   .inv-name{ font-family:'Press Start 2P',monospace; font-size:2.4cqmin; color:var(--ink); align-self:end; }
   .inv-desc{ font-size:3cqmin; color:var(--ink2); align-self:start; }
+  .inv-cell.has-use{ grid-template-columns:auto 1fr auto; }
+  .inv-use{ grid-column:3; grid-row:1 / span 2; align-self:center; }
 
   /* ---------- SHOP ---------- */
   #shop-panel .box{ width:84%; }
@@ -156,9 +158,20 @@
   #title .press{ margin-top:3cqmin; font-family:'Press Start 2P',monospace; font-size:2.8cqmin; color:#fff; animation:blink 1s steps(2) infinite; }
   #title .ctrls{ font-family:'Pixelify Sans'; font-size:3cqmin; color:#2f4a32; margin-top:.5cqmin; font-weight:600; max-width:80%; }
   @keyframes blink{ 50%{opacity:.15;} }
+  #title-menu{ position:relative; display:flex; flex-direction:column; align-items:center; gap:1.6cqmin; margin-top:2.4cqmin; }
+  .title-opt{ font-family:'Press Start 2P',monospace; font-size:2.8cqmin; color:#fff; background:none; border:none; cursor:pointer;
+    padding:.8cqmin 1.6cqmin; text-shadow:0.4cqmin 0.4cqmin 0 rgba(0,0,0,.25); }
+  .title-opt::before, .title-opt::after{ content:"\25BA"; visibility:hidden; margin-right:1.4cqmin; }
+  .title-opt::after{ content:"\25C4"; margin:0 0 0 1.4cqmin; }
+  .title-opt.sel{ color:var(--parch2); }
+  .title-opt.sel::before, .title-opt.sel::after{ visibility:visible; animation:blink 1s steps(2) infinite; }
+  #save-toast{ position:absolute; right:2cqmin; bottom:2cqmin; z-index:25; font-family:'Press Start 2P',monospace; font-size:1.8cqmin;
+    color:var(--ink); background:var(--parch); border:0.5cqmin solid var(--ink); padding:.8cqmin 1.4cqmin;
+    opacity:0; transition:opacity .25s; pointer-events:none; }
+  #save-toast.show{ opacity:1; }
 
   #ending{ background:linear-gradient(180deg,#2b2436 0%, #4a3a52 60%, #c98a9a 100%); }
-  #ending-cats{ width:64cqmin; height:30cqmin; image-rendering:pixelated; }
+  #ending-cats{ width:76.8cqmin; height:38.4cqmin; image-rendering:pixelated; border:0.6cqmin solid #fff7df; box-shadow:0 1cqmin 0 rgba(0,0,0,.25); }
   #ending h1{ font-family:'Press Start 2P',monospace; font-size:7cqmin; color:#fff; text-shadow:0.8cqmin 0.8cqmin 0 #c96d6d; }
   #ending p{ font-size:4cqmin; color:#fff; max-width:80%; font-weight:600; line-height:1.4; }
   #ending .press{ margin-top:2cqmin; font-family:'Press Start 2P',monospace; font-size:2.6cqmin; color:#fff; animation:blink 1s steps(2) infinite; }
@@ -263,6 +276,9 @@
         </div>
       </div>
 
+      <!-- save indicator -->
+      <div id="save-toast">&#10003; SAVED</div>
+
       <!-- fade -->
       <div id="fade"></div>
 
@@ -272,13 +288,16 @@
         <canvas id="title-cat" width="96" height="96"></canvas>
         <h1>GOKU'S QUEST</h1>
         <div class="sub">The Search for Chi Chi</div>
-        <div class="press">&#9658; PRESS ENTER &#9668;</div>
+        <div id="title-menu">
+          <button class="title-opt" id="opt-continue" data-act="continue">CONTINUE</button>
+          <button class="title-opt" id="opt-new" data-act="new">NEW GAME</button>
+        </div>
         <div class="ctrls">WASD / Arrows move &nbsp;&bull;&nbsp; SPACE swipe &nbsp;&bull;&nbsp; E interact &nbsp;&bull;&nbsp; J / K specials &nbsp;&bull;&nbsp; T treat &nbsp;&bull;&nbsp; M map</div>
       </div>
 
       <!-- ending -->
       <div id="ending" class="overlay">
-        <canvas id="ending-cats" width="160" height="80"></canvas>
+        <canvas id="ending-cats" width="192" height="96"></canvas>
         <h1 id="ending-title">DOMINION UNDONE</h1>
         <p id="ending-text"></p>
         <p style="font-size:5cqmin;color:#ffe;">&#9829; The End &#9829;</p>
@@ -298,18 +317,6 @@
     </div>
   </div>
 
-  <script src="src/game/sprites.js"></script>
-  <script src="src/game/sprites2.js"></script>
-  <script src="src/game/tiles.js"></script>
-  <script src="src/game/tiles2.js"></script>
-  <script src="src/game/tiles3.js"></script>
-  <script src="src/game/world.js"></script>
-  <script src="src/game/world2.js"></script>
-  <script src="src/game/engine.js"></script>
-  <script src="src/game/render.js"></script>
-  <script src="src/game/combat.js"></script>
-  <script src="src/game/shop.js"></script>
-  <script src="src/game/ui.js"></script>
-  <script src="src/game/main.js"></script>
+  <script type="module" src="./src/main.js"></script>
 </body>
 </html>

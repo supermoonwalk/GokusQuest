@@ -18,6 +18,7 @@
     e.hurtFlash = 0; e.moving = false; e.alive = (e.alive !== false);
     e.atkCD = 60; e.homeX = e.px; e.homeY = e.py; e.wanderA = Math.random() * 6.28;
     e.enraged = false; e.healed = false;
+    e.dormant = !!e.wake;            // bosses idle until the player enters their zone
   }
   function resetMap(map) {
     for (const e of (G.entities[map] || [])) {
@@ -27,6 +28,7 @@
       e.alive = true; e.dead = false;
       e.hp = e.maxHp; e.state = "roam"; e.stateT = 0; e.atkCD = 90;
       e.px = e.x * TS; e.py = e.y * TS;
+      e.dormant = !!e.wake; e.enraged = false;
       delete G.flags.defeated[e.id];
     }
   }
@@ -39,7 +41,7 @@
     if (p.atkCD > 0) p.atkCD--;
     if (p.atkTimer > 0) {
       p.atkTimer--;
-      if (p.atkTimer === ATK_DUR - 3) resolveSwipe();   // active frame
+      if (p.atkTimer === p.atkHit) resolveSwipe();      // active frame
     }
     if (p.spin > 0) {
       p.spin--;
@@ -57,12 +59,16 @@
       if (e.hurtFlash > 0) e.hurtFlash--;
       updateMonster(e, pc);
     }
+    separateBodies();
+    updateHexes();
     // coin drop physics
     for (const c of G.coinDrops) {
       c.t = (c.t || 0) + 1;
       if (c.t < 16) { c.px += c.vx; c.py += c.vy; c.vy += 0.18; }
     }
-    // fx tick
+    tickFX();
+  }
+  function tickFX() {
     for (const f of G.fx) { f.t++; }
     G.fx = G.fx.filter(f => f.t < f.life);
   }
@@ -74,6 +80,14 @@
     if (e.atkCD > 0) e.atkCD--;
     e.stateT++;
     e.moving = false;
+
+    // dormant boss: sit still until the player steps into the arena
+    if (e.dormant) {
+      faceVel(e, dx, dy);   // watches you approach
+      const tx = Math.floor(pc.x / TS), ty = Math.floor(pc.y / TS), z = e.wake;
+      if (tx >= z.x0 && tx <= z.x1 && ty >= z.y0 && ty <= z.y1) wakeBoss(e);
+      return;
+    }
 
     // boss phase tweaks
     if (e.vesper && !e.enraged && e.hp <= e.maxHp * 0.5) {
@@ -116,32 +130,96 @@
       const sp = (e.big ? 2.0 : 2.6);
       Engine.moveEntity(e, e.lx * sp, e.ly * sp, mbox(e));
       e.moving = true;
-      if (e.stateT > 10) { e.state = "recover"; e.stateT = 0; e.atkCD = e.big ? 55 : 42; }
+      // a lunge ends on contact instead of carrying through the player
+      const touching = Math.hypot(pc.x - (e.px + 8), pc.y - (e.py + 8)) <= bodyGap(e) + 1;
+      if (touching || e.stateT > 10) { e.state = "recover"; e.stateT = 0; e.atkCD = e.big ? 55 : 42; }
     } else if (e.state === "recover") {
       if (e.stateT > (e.big ? 30 : 20)) { e.state = dist < e.aggro ? "chase" : "roam"; e.stateT = 0; }
     }
 
-    // contact damage to player
-    if (overlap(e, G.player, 11) && G.player.iframes <= 0 && !G.player.dead) {
+    // contact damage to player (bodies never overlap, so test against the touching distance)
+    const cd = Math.hypot(pc.x - (e.px + 8), pc.y - (e.py + 8));
+    if (cd <= bodyGap(e) + 1 && G.player.iframes <= 0 && !G.player.dead) {
       hurtPlayer(e.touch);
     }
   }
 
+  function wakeBoss(e) {
+    e.dormant = false; e.state = "chase"; e.stateT = 0; e.atkCD = 70;
+    const met = G.flags.bossMet || (G.flags.bossMet = {});
+    const again = met[e.id]; met[e.id] = true;
+    if (!e.vesper && G.quest === "fighting") Engine.setQuest("boss");
+    // first meeting: a full scene; a rematch after dying: one line and straight to it
+    if (!again) { if (e.vesper) Cutscene.vesperIntro(e); else Cutscene.tomIntro(e); return; }
+    if (e.vesper) UI.showDialogue("Madame Vesper", ["\"Persistent little stray. I do admire persistence... in a trophy.\""]);
+    else UI.showDialogue("Tuxedo Tom", ["\"Back for another scratch, kid?\""]);
+  }
+
   function mbox(e) { return { ox: 3, oy: 6, w: 10, h: 9 }; }
+
+  /* -------------------- body separation -------------------- */
+  // closest the centres of a monster and the player may get
+  function bodyGap(e) { return e.big ? 15 : 12; }
+  // push overlapping bodies apart: monsters vs player, and monsters vs each other.
+  // moves go through moveEntity, so nobody is shoved into a wall; if a monster is
+  // pinned, the player takes the remaining push instead.
+  function separateBodies() {
+    const p = G.player;
+    const mons = (G.entities[G.cur] || []).filter(e => e.type === "monster" && e.alive);
+    for (const e of mons) {
+      if (p.dead) break;
+      const pc = Engine.centerOf(p);
+      let dx = (e.px + 8) - pc.x, dy = (e.py + 8) - pc.y;
+      let d = Math.hypot(dx, dy);
+      const gap = bodyGap(e);
+      if (d >= gap) continue;
+      if (d < 0.01) { dx = p.dir === "left" ? -1 : 1; dy = 0; d = 1; }   // exactly stacked
+      const push = gap - d, nx = dx / d, ny = dy / d;
+      const ox = e.px, oy = e.py;
+      Engine.moveEntity(e, nx * push, ny * push, mbox(e));
+      const moved = (e.px - ox) * nx + (e.py - oy) * ny;
+      const rest = push - moved;
+      if (rest > 0.05) Engine.moveEntity(p, -nx * rest, -ny * rest, Engine.PBOX);
+    }
+    for (let i = 0; i < mons.length; i++) for (let j = i + 1; j < mons.length; j++) {
+      const a = mons[i], b = mons[j];
+      let dx = b.px - a.px, dy = b.py - a.py, d = Math.hypot(dx, dy);
+      const gap = (a.big || b.big) ? 14 : 11;
+      if (d >= gap) continue;
+      if (d < 0.01) { dx = 1; dy = 0; d = 1; }
+      const half = (gap - d) / 2, nx = dx / d, ny = dy / d;
+      Engine.moveEntity(a, -nx * half, -ny * half, mbox(a));
+      Engine.moveEntity(b, nx * half, ny * half, mbox(b));
+    }
+  }
+
+  /* -------------------- Vesper's hex bolts -------------------- */
+  // simulated here (not in renderFX) so they freeze with the game and stop at walls
+  function updateHexes() {
+    const p = G.player, map = G.maps[G.cur];
+    for (const f of G.fx) {
+      if (f.kind !== "hex") continue;
+      f.x += f.vx; f.y += f.vy;
+      if (Engine.tileSolid(map, Math.floor(f.x / TS), Math.floor(f.y / TS))) { f.t = f.life; continue; }
+      if (!p.dead && p.iframes <= 0 && Math.hypot(f.x - (p.px + 8), f.y - (p.py + 8)) < 8) {
+        hurtPlayer(f.dmg); f.t = f.life;
+      }
+    }
+  }
   function faceVel(e, vx, vy) {
     if (!vx && !vy) return;
     if (Math.abs(vx) > Math.abs(vy)) e.dir = vx < 0 ? "left" : "right";
     else e.dir = vy < 0 ? "up" : "down";
-  }
-  function overlap(a, b, pad) {
-    return Math.abs((a.px) - (b.px)) < pad && Math.abs((a.py) - (b.py)) < pad;
   }
 
   /* -------------------- player offense -------------------- */
   function playerAttack() {
     const p = G.player;
     if (p.dead || p.spin > 0 || p.atkTimer > 0 || p.atkCD > 0) return;
-    p.atkTimer = ATK_DUR; p.atkDur = ATK_DUR; p.atkCD = ATK_DUR + ATK_CD;
+    // the Speed upgrade also quickens the swipe: +10% attack rate per level
+    const f = 1 + G.upgrades.spd * 0.1;
+    const dur = Math.round(ATK_DUR / f), cd = Math.round(ATK_CD / f);
+    p.atkTimer = dur; p.atkDur = dur; p.atkHit = dur - 3; p.atkCD = dur + cd;
     G.fx.push({ kind: "swoosh", t: 0, life: 6 });
   }
   function resolveSwipe() {
@@ -198,14 +276,13 @@
       if (e.type !== "monster" || !e.alive) continue;
       const ec = { x: e.px + 8, y: e.py + 8 };
       const d = Math.hypot(ec.x - c.x, ec.y - c.y);
-      if (d < 26 && !e._spinHit) {
-        e._spinHit = true;
+      if (d < 26 && !(e._spinHitUntil > G.frame)) {
+        e._spinHitUntil = G.frame + 12;      // one hit per ~200ms of the spin
         const dmg = Math.max(1, Math.round(p.atk * 2.2) + rnd(4) - (e.def || 0));
         const a = Math.atan2(ec.y - c.y, ec.x - c.x);
         e.hp -= dmg; e.hurtFlash = 6; popText(e.px + 4, e.py - 2, "" + dmg, "#ffe08a");
         Engine.moveEntity(e, Math.cos(a) * 9, Math.sin(a) * 9, mbox(e));
         if (e.hp <= 0) { Engine.onMonsterDefeated(e); G.fx.push({ kind: "poof", x: e.px + 8, y: e.py + 8, t: 0, life: 14 }); }
-        setTimeout(() => { e._spinHit = false; }, 200);
       }
     }
   }
@@ -227,7 +304,7 @@
         const a = Math.atan2(ec.y - c.y, ec.x - c.x);
         Engine.moveEntity(e, Math.cos(a) * 12, Math.sin(a) * 12, mbox(e));
         e.state = "recover"; e.stateT = 0; e.atkCD = 40;
-        if (e.hp <= 0) Engine.onMonsterDefeated(e);
+        if (e.hp <= 0) { Engine.onMonsterDefeated(e); G.fx.push({ kind: "poof", x: e.px + 8, y: e.py + 8, t: 0, life: 14 }); }
       }
     }
   }
@@ -275,14 +352,24 @@
         ctx.save(); ctx.globalAlpha = 0.5 * (1 - f.t / f.life); ctx.strokeStyle = "#cfeaff"; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(f.x - cam.x, f.y - cam.y); ctx.lineTo(f.x - cam.x - 14, f.y - cam.y); ctx.stroke(); ctx.restore();
       } else if (f.kind === "hex") {
-        f.x += f.vx; f.y += f.vy;
-        // hit player?
-        if (Math.hypot(f.x - (G.player.px + 8), f.y - (G.player.py + 8)) < 8 && G.player.iframes <= 0) {
-          hurtPlayer(f.dmg); f.t = f.life;
-        }
         const px = f.x - cam.x, py = f.y - cam.y;
         ctx.save(); ctx.fillStyle = "#8fe04a"; ctx.beginPath(); ctx.arc(px, py, 3.5, 0, 6.28); ctx.fill();
         ctx.fillStyle = "#cffaa0"; ctx.beginPath(); ctx.arc(px, py, 1.5, 0, 6.28); ctx.fill(); ctx.restore();
+      } else if (f.kind === "flash") {
+        ctx.save(); ctx.globalAlpha = 0.7 * (1 - f.t / f.life); ctx.fillStyle = f.color || "#fff";
+        ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height); ctx.restore();
+      } else if (f.kind === "smoke") {
+        if (f.t < 0) continue;                 // staggered puffs wait their turn
+        const a = 1 - f.t / f.life, r = 3 + f.t * 0.6;
+        ctx.save(); ctx.globalAlpha = a * 0.8; ctx.fillStyle = f.color || "#5a2d6e";
+        ctx.beginPath(); ctx.arc(f.x - cam.x + Math.sin(f.t * 0.3 + f.x) * 2, f.y - cam.y - f.t * 0.4, r, 0, 6.28); ctx.fill();
+        ctx.restore();
+      } else if (f.kind === "heart") {
+        // rises and fades; a small pixel heart
+        const a = 1 - f.t / f.life;
+        ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, a * 1.6));
+        Sprites.drawHeart(ctx, Math.round(f.x - cam.x), Math.round(f.y - cam.y - f.t * 0.35), 1, true);
+        ctx.restore();
       } else if (f.kind === "slamtext") {
         const a = 1 - f.t / f.life;
         ctx.save(); ctx.globalAlpha = Math.max(0, a);
@@ -305,6 +392,6 @@
   }
 
   window.Combat = {
-    initMonster, resetMap, update, playerAttack, useSpecial, renderFX, popText, propCanvas, gainChi,
+    initMonster, resetMap, update, tickFX, playerAttack, useSpecial, renderFX, popText, propCanvas, gainChi,
   };
 })();

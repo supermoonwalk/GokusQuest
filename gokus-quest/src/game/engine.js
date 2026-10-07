@@ -22,7 +22,7 @@
     coins: 0,
     flags: { searched: false, deduced: false, defeated: {}, cluesSeen: {}, ribbon: false,
              kittens: {}, enteredManor: false, learnedSlam: false, shopMoved: false,
-             metShop: false, tomBeaten: false, intro: false },
+             metShop: false, tomBeaten: false, intro: false, bossMet: {} },
     quest: "start",
     keys: {},
     menu: null,                      // 'quest' | 'inventory'
@@ -55,12 +55,34 @@
         if (tileSolid(map, tx, ty)) return true;
     return false;
   }
+  /* solid entities: NPCs, chests, cages and the market stall block movement.
+     Returned as pixel rects (feet-level footprint, like the tile collision). */
+  const SOLID_TYPES = ["npc", "chest", "gear", "captive", "shop"];
+  function entityRect(e) {
+    if (e.gone || e.scripted) return null;                 // walking shopkeeper doesn't block
+    if ((e.type === "chest" || e.type === "gear") && e.taken) return null;
+    if (e.type === "captive" && !e.caged) return null;     // freed cats can be walked past
+    if (e.type === "shop") return { x: e.px - 7, y: e.py - 2, w: 30, h: 18 };   // stall counter
+    return { x: e.px + 2, y: e.py + 6, w: 12, h: 9 };
+  }
+  function boxHitsEntity(ent, bx, by, bw, bh) {
+    for (const e of (G.entities[G.cur] || [])) {
+      if (e === ent || !SOLID_TYPES.includes(e.type)) continue;
+      const r = entityRect(e); if (!r) continue;
+      if (bx < r.x + r.w && bx + bw > r.x && by < r.y + r.h && by + bh > r.y) return e;
+    }
+    return null;
+  }
   // move an entity along one axis, 1px at a time, stopping at walls
   function moveAxis(map, ent, dx, dy, box) {
     const steps = Math.ceil(Math.max(Math.abs(dx), Math.abs(dy)));
     const sx = dx / (steps || 1), sy = dy / (steps || 1);
     for (let i = 0; i < steps; i++) {
       const nx = ent.px + sx, ny = ent.py + sy;
+      // an entity you already overlap (e.g. spawned on it) never traps you
+      const inside = boxHitsEntity(ent, ent.px + box.ox, ent.py + box.oy, box.w, box.h);
+      const hitE = boxHitsEntity(ent, nx + box.ox, ny + box.oy, box.w, box.h);
+      if (hitE && hitE !== inside) break;
       if (!boxHitsSolid(map, nx + box.ox, ny + box.oy, box.w, box.h)) {
         ent.px = nx; ent.py = ny;
       } else break;
@@ -152,12 +174,14 @@
   /* -------------------- UPDATE -------------------- */
   function update() {
     G.frame++;
+    if (G.state === "cutscene" && G.scene) { Cutscene.update(); Combat.tickFX(); updateCamera(); return; }
     if (G.state !== "play") return;
     handleMovement();
     Combat.update();
     pickupCoins();
     checkWarps();
     updateCamera();
+    Save.tick();
   }
 
   function pickupCoins() {
@@ -209,15 +233,16 @@
     UI.flashTransition();
     updateCamera();
     if (G.cur === "forest" && G.quest === "deduced") setQuest("fighting");
-    if (G.cur === "manor" && !G.flags.enteredManor) {
-      G.flags.enteredManor = true;
-      setQuest("manor");
+    const firstManor = G.cur === "manor" && !G.flags.enteredManor;
+    const firstInterior = G.cur === "interior" && !G.flags.searched;
+    if (firstManor) { G.flags.enteredManor = true; setQuest("manor"); }
+    if (firstInterior) { G.flags.searched = true; if (G.quest === "start") setQuest("searched"); }
+    Save.checkpoint();
+    if (firstManor) {
       setTimeout(() => UI.showChapterCard(), 260);
       return;
     }
-    if (G.cur === "interior" && !G.flags.searched) {
-      G.flags.searched = true;
-      if (G.quest === "start") setQuest("searched");
+    if (firstInterior) {
       UI.showDialogue("Goku", [
         "Chi Chi? ...Chi Chi, are you home?",
         "The cottage is ransacked. Something's wrong. Look for clues \u2014 walk up to things and press E."
@@ -278,7 +303,8 @@
           G.flags.deduced = true; setQuest("deduced");
           World.openForestGate(G);
           UI.showDialogue(null, ["QUEST UPDATED!",
-            "Tuxedo Tom took Chi Chi! The fallen log at the EAST edge of town has rolled aside. WHISKERWOOD is open.",
+            "Tuxedo Tom took Chi Chi! His gang hides in WHISKERWOOD, past the fallen log at the EAST edge of town.",
+            "Nothing will stop Goku now. He'll shove that log aside himself.",
             "Stock up at Whiskers' shop, then head into the woods. Swipe with SPACE to fight."]);
         }
       });
@@ -377,6 +403,19 @@
     }
   }
 
+  function useTreat() {
+    const p = G.player;
+    if (p.dead) return false;
+    if (G.treats <= 0) { Combat.popText(p.px - 4, p.py - 2, "NO TREATS", "#ffb0b0"); return false; }
+    if (p.hp >= p.maxHp) { Combat.popText(p.px - 2, p.py - 2, "HP FULL", "#cfeaff"); return false; }
+    G.treats--;
+    const heal = Math.min(14, p.maxHp - p.hp);
+    p.hp += heal;
+    Combat.popText(p.px + 4, p.py - 2, "+" + heal, "#6fd06f");
+    UI.updateHud();
+    return true;
+  }
+
   function addItem(id) { if (!G.inventory.includes(id)) G.inventory.push(id); }
   function setQuest(step) { G.quest = step; UI.updateHud(); }
 
@@ -423,7 +462,7 @@
       updateCamera(); UI.updateHud();
       UI.showDialogue("", [
         "Everything goes dark... then Goku shakes it off. (A cat always lands on its feet.)",
-        "You wake safe back in town, coins still in your pocket. The woodland strays have crept back, though.",
+        "You wake safe back in town, coins still in your pocket. But every stray and thug you beat has crept back.",
         "Spend your coins, get stronger, and try again."]);
     }, 480);
   }
@@ -434,14 +473,11 @@
     G.flags.defeated[e.id] = true;
     if (e.coins) spawnCoins(e.px, e.py, e.coins);
 
-    if (e.vesper) { setQuest("done"); setTimeout(() => UI.showFinale(), 700); return; }
+    if (e.vesper) { setQuest("done"); Cutscene.finale(); return; }
     if (e.boss) {
-      G.flags.tomBeaten = true;
-      const cap = (G.entities.forest).find(x => x.id === "chichi");
-      if (cap) cap.gone = true;
-      World.openManorGate(G);
+      G.flags.tomBeaten = true;      // Chi Chi's cage is carried off during the reveal scene
       setQuest("tomBeaten");
-      setTimeout(() => UI.vesperReveal(), 700);
+      Cutscene.vesperReveal(e);     // opens the manor gate on screen
       return;
     }
   }
@@ -451,12 +487,21 @@
     const map = G.maps[G.cur];
     const mapPxW = map.w * TS, mapPxH = map.h * TS;
     const p = G.player;
-    let cx = p.px + TS / 2 - VPW / 2;
-    let cy = p.py + TS / 2 - VPH / 2;
+    // cutscenes can point the camera somewhere else (G.camFocus, pixel centre);
+    // the camera then eases there, and eases back to Goku once it's cleared
+    const f = G.camFocus;
+    let cx = (f ? f.x : p.px + TS / 2) - VPW / 2;
+    let cy = (f ? f.y : p.py + TS / 2) - VPH / 2;
     if (mapPxW <= VPW) cx = -(VPW - mapPxW) / 2;
     else cx = Math.max(0, Math.min(cx, mapPxW - VPW));
     if (mapPxH <= VPH) cy = -(VPH - mapPxH) / 2;
     else cy = Math.max(0, Math.min(cy, mapPxH - VPH));
+    if (f || G.camEase) {
+      const k = 0.08;
+      G.camera.x += (cx - G.camera.x) * k; G.camera.y += (cy - G.camera.y) * k;
+      if (!f && Math.abs(cx - G.camera.x) < 0.5 && Math.abs(cy - G.camera.y) < 0.5) G.camEase = false;
+      else return;
+    }
     G.camera.x = cx; G.camera.y = cy;
   }
 
@@ -464,7 +509,7 @@
     init, update, render: null, interact, setQuest, warpTo,
     onMonsterDefeated, onPlayerDeath, recalcPlayer,
     equipGear, unequipSlot, sellGear, autoEquipIfBetter, freedCount,
-    spawnCoins, updateScriptedNpcs, centerOf, moveEntity,
+    spawnCoins, updateScriptedNpcs, centerOf, moveEntity, updateCamera, useTreat,
     VPW, VPH, TS, PBOX, tileSolid, boxHitsSolid,
   };
 })();

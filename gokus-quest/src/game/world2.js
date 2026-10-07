@@ -49,7 +49,8 @@
       { type: "monster", id: "v_brute",  mon: "brute", x: 10, y: 10, dir: "down", alive: true },
       { type: "monster", id: "v_hex",    mon: "hex",   x: 5,  y: 5,  dir: "down", alive: true },
       { type: "monster", id: "v_hexB",   mon: "hex",   x: 16, y: 5,  dir: "down", alive: true },
-      { type: "monster", id: "vesper", mon: "vesper", x: 10, y: 3, dir: "down", alive: true, boss: true, vesper: true },
+      { type: "monster", id: "vesper", mon: "vesper", x: 10, y: 3, dir: "down", alive: true, boss: true, vesper: true,
+        wake: { x0: 1, y0: 1, x1: 20, y1: 6 } },      // stays on her throne until you enter the throne hall
 
       // caged kittens — free them all (each gives bonus coins)
       { type: "captive", id: "k_boots",   kind: "kBlue",   kname: "Boots",   kid: true, caged: true, x: 3,  y: 16, dir: "down" },
