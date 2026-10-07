@@ -1,5 +1,35 @@
 # Goku's Quest zelf testen
 
+## ⚡ Snel starten (als je het al eens geïnstalleerd hebt)
+
+Open **PowerShell** via het startmenu en typ, regel voor regel (Enter na elke regel):
+
+```powershell
+cd ~\GokusQuest\gokus-quest
+npm run dev
+```
+
+Open daarna **http://localhost:5173** in je browser. Laat PowerShell openstaan zolang je speelt; stoppen met **Ctrl + C**.
+
+**Nieuwste versie ophalen** (als er iets nieuws gemaakt is), vóór `npm run dev`:
+
+```powershell
+cd ~\GokusQuest
+git pull
+cd gokus-quest
+npm install
+npm run dev
+```
+
+### Waar ben ik in PowerShell?
+Wat vóór het `>`-teken staat, is de map waarin je zit. Bijvoorbeeld `PS C:\Users\jouwnaam\GokusQuest\gokus-quest>`.
+- `cd ~` brengt je altijd terug naar je eigen map.
+- `cd ..` gaat één map omhoog.
+- Kwijt? Sluit PowerShell en open hem opnieuw.
+- Staat er `C:\WINDOWS\system32`? Typ eerst `cd ~`.
+
+---
+
 Er zijn **twee verschillende plekken** waar je iets typt:
 
 | Waar | Wat je daar typt | Hoe open je het |
