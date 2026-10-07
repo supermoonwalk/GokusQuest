@@ -344,25 +344,6 @@
     }
   }
 
-  /* -------------------- VESPER REVEAL -------------------- */
-  function vesperReveal() {
-    showDialogue("Tuxedo Tom", [
-      "Tom slumps, beaten. \"Heh... you think I'M the one to fear?\"",
-      "\"I only FETCH for her. The Mistress wanted your sister... special.\""
-    ], () => {
-      showDialogue("???", [
-        "A cold voice drifts down the path:",
-        "\"Such a darling little tabby. She'll look perfect in my collection.\""
-      ], () => {
-        showDialogue("Madame Vesper", [
-          "\"I am Madame Vesper. Every stray belongs to me \u2014 and now, so does she.\"",
-          "She melts into shadow with Chi Chi. To the EAST, a dark MANOR GATE grinds open.",
-          "Stock up at the shop, then go. This is far from over."
-        ]);
-      });
-    });
-  }
-
   /* -------------------- FINALE -------------------- */
   // ending card: Goku, Chi Chi and the kittens walk home through a dawn meadow
   let endAnim = null;
@@ -430,7 +411,7 @@
     toggleMenu, closeMenu, toggleMap, closeMap, drawMap,
     flashTransition, startGame, drawTitleCat,
     initTitleMenu, moveTitleSel, chooseTitle, continueGame, showSaved,
-    showChapterCard, endChapterCard, vesperReveal, showFinale,
+    showChapterCard, endChapterCard, showFinale,
     get dialogueOpen() { return !!D; },
   };
 })();

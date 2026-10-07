@@ -54,6 +54,14 @@ komen terug (roguelike), maar je huis en dorp blijven: dat is je blijvende vooru
 Bugs, botsingen, eindbazen die wachten, plotholes, herenigingsscène, eindscherm, opslaan, en een
 automatische speltest (`npm test`).
 
+### Fase 1b: Baas-cutscenes ✅
+- **Tom's entree:** camera schuift naar zijn open plek, Chi Chi rammelt aan haar kooi, Tom draait zich om en komt op je af.
+- **Na Tom:** Tom blijft verslagen liggen, Vesper verschijnt met een paarse flits, glijdt naar de kooi en verdwijnt
+  met Chi Chi in rook; Tom sluipt achter haar aan; de camera toont hoe de poort naar het landhuis opengaat.
+- **Vesper's entree:** de fakkels doven, het donker trekt samen rond de troon, Vesper staat op en al haar
+  handlangers draaien zich naar je om.
+- Een herkansing na doodgaan geeft alleen een korte zin, geen hele scène.
+
 ### Fase 2: Goku's eigen huis
 - Een klein, kaal **hutje** aan de rand van het dorp (alleen een strozak). Het wordt je respawn-plek.
 - **Meubels kopen** bij Whiskers en plaatsen in je huis. Elk meubel geeft een klein blijvend voordeel:

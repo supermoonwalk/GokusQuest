@@ -15,6 +15,11 @@
   function finish() { steps = null; G.scene = false; }
 
   function update() {
+    // tick per-entity animation timers used by scenes (hop, rattle, fades)
+    for (const e of (G.entities[G.cur] || [])) {
+      if (e.hop > 0) e.hop--;
+      if (e.shake > 0) e.shake--;
+    }
     if (!steps || waiting) return;
     const step = steps[idx];
     if (!step) { finish(); return; }
@@ -31,16 +36,36 @@
     return true;
   };
   // walk an entity toward a pixel target; done when within `near` px
-  const walkTo = (ent, target, near, speed) => () => {
+  const walkTo = (ent, target, near, speed) => (t) => {
     const tx = target().x, ty = target().y;
     const dx = tx - ent.px, dy = ty - ent.py, d = Math.hypot(dx, dy);
-    if (d <= near) { ent.moving = false; return true; }
+    if (d <= near || t > 150) { ent.moving = false; return true; }   // give up if something's in the way
     const sp = Math.min(speed, d - near);
     Engine.moveEntity(ent, dx / d * sp, dy / d * sp, { ox: 3, oy: 7, w: 10, h: 8 });
     ent.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? "left" : "right") : (dy < 0 ? "up" : "down");
     ent.moving = true;
     return false;
   };
+  // camera: ease to a pixel point / back to Goku (done once it has settled)
+  const panTo = (x, y, frames) => (t) => { G.camFocus = { x, y }; return t >= (frames || 50); };
+  const panBack = () => (t) => { if (t === 0) { G.camFocus = null; G.camEase = true; } return !G.camEase || t > 90; };
+  // fade G.dim (manor darkness) to a value over n frames
+  const dimTo = (v, n) => { let from = 0; return (t) => {
+    if (t === 0) from = G.dim || 0;
+    G.dim = from + (v - from) * Math.min(1, t / n); return t >= n; }; };
+  const flash = (color) => G.fx.push({ kind: "flash", color, t: 0, life: 18 });
+  const smoke = (x, y, color, n) => { for (let i = 0; i < (n || 6); i++)
+    G.fx.push({ kind: "smoke", x: x + (i * 7 % 13) - 6, y: y + (i * 5 % 9) - 4, color, t: -i * 3, life: 40 }); };
+  const face = (e, target) => {
+    const dx = target.px - e.px, dy = target.py - e.py;
+    e.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? "left" : "right") : (dy < 0 ? "up" : "down");
+  };
+  const freeze = () => {
+    const p = G.player;
+    p.atkTimer = 0; p.spin = 0; p.moving = false; p.iframes = 0; p.hurtFlash = 0; G.keys = {};
+    G.fx = G.fx.filter(f => f.kind !== "hex");
+  };
+  const centre = (e) => ({ x: e.px + 8, y: e.py + 8 });
   const poof = (x, y) => G.fx.push({ kind: "poof", x, y, t: 0, life: 14 });
   const heart = (x, y) => G.fx.push({ kind: "heart", x, y, t: 0, life: 70 });
 
@@ -107,5 +132,97 @@
     start(list);
   }
 
-  window.Cutscene = { start, update, finale, get active() { return !!steps; } };
+  /* ---------- TOM: first meeting in his clearing ---------- */
+  function tomIntro(tom) {
+    const p = G.player;
+    const cage = G.entities.forest.find(e => e.id === "chichi");
+    freeze();
+    tom.dir = "up";                          // facing his prize when you arrive
+    const mid = { x: (tom.px + cage.px) / 2 + 8, y: (tom.py + cage.py) / 2 + 8 };
+    start([
+      panTo(mid.x, mid.y, 55),
+      run(() => { cage.shake = 40; }),
+      say("Chi Chi", ["*rattling the bars* GOKU! Over here!"]),
+      run(() => { face(tom, p); tom.hop = 14; Combat.popText(tom.px + 4, tom.py - 8, "!", "#ffe08a"); }),
+      wait(24),
+      say("Tuxedo Tom", ["\"Well, well. Big brother came sniffing after all.\"",
+        "\"She's spoken for, kid. Turn around \u2014 or I'll send you home in pieces.\""]),
+      walkTo(tom, () => ({ x: p.px + 20, y: p.py }), 6, 1.4),
+      run(() => { tom.hop = 14; }),
+      panBack(),
+      run(() => { finish(); G.state = "play"; tom.state = "chase"; tom.stateT = 0; tom.atkCD = 50; }),
+    ]);
+  }
+
+  /* ---------- after Tom: Vesper takes Chi Chi, the manor gate opens ---------- */
+  function vesperReveal(tom) {
+    const cage = G.entities.forest.find(e => e.id === "chichi");
+    const vesper = { type: "actor", kind: "vesper", px: cage.px - 40, py: cage.py + 6, alpha: 0, dir: "right" };
+    // Tom stays on screen, beaten, for the scene
+    const body = { type: "actor", kind: World.MONSTERS.boss.kind, px: tom.px, py: tom.py, dir: "down" };
+    freeze();
+    start([
+      run(() => G.entities.forest.push(body)),
+      wait(45),
+      panTo(tom.px + 8, tom.py + 8, 30),
+      say("Tuxedo Tom", ["Tom slumps, beaten. \"Heh... you think I'M the one to fear?\"",
+        "\"I only FETCH for her. The Mistress wanted your sister... special.\""]),
+      run(() => { G.entities.forest.push(vesper); flash("#8a4ab0"); smoke(vesper.px + 8, vesper.py + 8, "#5a2d6e", 8); }),
+      (t) => { vesper.alpha = Math.min(1, t / 30); return t >= 30; },
+      panTo(vesper.px + 24, vesper.py + 4, 40),
+      say("???", ["A cold voice. A heavy cloud of lavender.",
+        "\"Such a darling little tabby. She'll look perfect in my collection.\""]),
+      say("Madame Vesper", ["\"I am Madame Vesper. Every stray belongs to me \u2014 and now, so does she.\""]),
+      // she glides to the cage
+      (t) => { const tx = cage.px - 14, dx = tx - vesper.px, dy = cage.py - vesper.py;
+        vesper.px += Math.sign(dx) * Math.min(Math.abs(dx), 0.8); vesper.py += Math.sign(dy) * Math.min(Math.abs(dy), 0.6);
+        return Math.abs(dx) < 1 && Math.abs(dy) < 1; },
+      run(() => { cage.shake = 50; }),
+      say("Chi Chi", ["GOKU \u2014!"]),
+      run(() => { flash("#5a2d6e"); smoke(vesper.px + 8, vesper.py + 8, "#3f1f50", 10); smoke(cage.px + 8, cage.py + 8, "#3f1f50", 10); }),
+      wait(10),
+      run(() => { cage.gone = true; G.entities.forest = G.entities.forest.filter(e => e !== vesper); }),
+      wait(30),
+      // Tom slinks off into the trees after his mistress
+      run(() => { smoke(body.px + 8, body.py + 8, "#3b3340", 6); }),
+      wait(8),
+      run(() => { G.entities.forest = G.entities.forest.filter(e => e !== body); }),
+      wait(30),
+      // the dark gate grinds open at the east edge of the clearing
+      panTo(26 * TS + 8, 9 * TS + 8, 45),
+      run(() => { World.openManorGate(G); flash("#2a1338"); smoke(26 * TS + 8, 9 * TS + 10, "#2a1338", 10); }),
+      wait(40),
+      say(null, ["To the EAST, a dark MANOR GATE grinds open.",
+        "Stock up at Whiskers' shop, then go after them. This is far from over."]),
+      panBack(),
+      run(() => { finish(); G.state = "play"; }),
+    ]);
+  }
+
+  /* ---------- VESPER: rising from her throne ---------- */
+  function vesperIntro(v) {
+    const p = G.player;
+    const minions = G.entities.manor.filter(e => e.type === "monster" && e.alive && e !== v);
+    const freed = Engine.freedCount();
+    freeze();
+    start([
+      panTo(v.px + 8, v.py + 16, 50),
+      dimTo(1, 40),
+      say(null, ["The torches gutter. That lavender smell again \u2014 the same as the teacup in Chi Chi's cottage."]),
+      run(() => { v.hop = 14; flash("#8a4ab0"); smoke(v.px + 8, v.py + 12, "#5a2d6e", 8); }),
+      wait(30),
+      say("Madame Vesper", [freed >= 5
+        ? "\"You emptied my cages. Every last one. Do you know how long that collection took me?\""
+        : "\"Tom failed me. My shadows failed me. How tiresome.\""]),
+      // every shadow in the manor turns toward Goku
+      run(() => { for (const m of minions) { face(m, p); m.hop = 14; Combat.popText(m.px + 4, m.py - 8, "!", "#ff7ad0"); } }),
+      wait(30),
+      say("Madame Vesper", ["\"No matter. Your sister stays \u2014 and you, little hero, will make a lovely new centrepiece.\""]),
+      dimTo(0, 30),
+      panBack(),
+      run(() => { finish(); G.state = "play"; v.state = "chase"; v.stateT = 0; v.atkCD = 60; }),
+    ]);
+  }
+
+  window.Cutscene = { start, update, finale, tomIntro, vesperReveal, vesperIntro, get active() { return !!steps; } };
 })();

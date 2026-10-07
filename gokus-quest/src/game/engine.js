@@ -475,12 +475,9 @@
 
     if (e.vesper) { setQuest("done"); Cutscene.finale(); return; }
     if (e.boss) {
-      G.flags.tomBeaten = true;
-      const cap = (G.entities.forest).find(x => x.id === "chichi");
-      if (cap) cap.gone = true;
-      World.openManorGate(G);
+      G.flags.tomBeaten = true;      // Chi Chi's cage is carried off during the reveal scene
       setQuest("tomBeaten");
-      setTimeout(() => UI.vesperReveal(), 700);
+      Cutscene.vesperReveal(e);     // opens the manor gate on screen
       return;
     }
   }
@@ -490,12 +487,21 @@
     const map = G.maps[G.cur];
     const mapPxW = map.w * TS, mapPxH = map.h * TS;
     const p = G.player;
-    let cx = p.px + TS / 2 - VPW / 2;
-    let cy = p.py + TS / 2 - VPH / 2;
+    // cutscenes can point the camera somewhere else (G.camFocus, pixel centre);
+    // the camera then eases there, and eases back to Goku once it's cleared
+    const f = G.camFocus;
+    let cx = (f ? f.x : p.px + TS / 2) - VPW / 2;
+    let cy = (f ? f.y : p.py + TS / 2) - VPH / 2;
     if (mapPxW <= VPW) cx = -(VPW - mapPxW) / 2;
     else cx = Math.max(0, Math.min(cx, mapPxW - VPW));
     if (mapPxH <= VPH) cy = -(VPH - mapPxH) / 2;
     else cy = Math.max(0, Math.min(cy, mapPxH - VPH));
+    if (f || G.camEase) {
+      const k = 0.08;
+      G.camera.x += (cx - G.camera.x) * k; G.camera.y += (cy - G.camera.y) * k;
+      if (!f && Math.abs(cx - G.camera.x) < 0.5 && Math.abs(cy - G.camera.y) < 0.5) G.camEase = false;
+      else return;
+    }
     G.camera.x = cx; G.camera.y = cy;
   }
 

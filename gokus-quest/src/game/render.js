@@ -122,7 +122,10 @@
     drawables.sort((a, b) => (a === G.player ? a.py : a.py) - (b === G.player ? b.py : b.py));
 
     for (const d of drawables) {
-      const sx = Math.round(d.px - cam.x), sy = Math.round(d.py - cam.y);
+      // cutscene animation offsets: a little hop, or a rattle (cages)
+      const hop = d.hop > 0 ? Math.round(Math.sin(d.hop / 14 * Math.PI) * 4) : 0;
+      const shake = d.shake > 0 ? (Math.floor(G.frame / 2) % 2 ? 1 : -1) : 0;
+      const sx = Math.round(d.px - cam.x) + shake, sy = Math.round(d.py - cam.y) - hop;
       if (d === G.player) { drawPlayer(ctx, d, sx, sy); continue; }
       if (d.type === "monster") {
         const flash = d.hurtFlash > 0;
@@ -140,6 +143,12 @@
         drawCoinChest(ctx, sx, sy);
       } else if (d.type === "shop") {
         drawShop(ctx, sx - 8, sy - 14);
+      } else if (d.type === "actor") {
+        // scripted-only characters (Vesper appearing in the forest)
+        ctx.save(); ctx.globalAlpha = d.alpha == null ? 1 : d.alpha;
+        if (d.kind === "vesper") Sprites2.drawVesper(ctx, sx, sy + 1, 1, { t: G.frame });
+        else Sprites.drawCat(ctx, d.kind, d.dir, sx, sy, {});
+        ctx.restore();
       } else if (d.type === "captive") {
         Sprites.drawCat(ctx, d.kind, d.dir, sx, sy, { bob: walkBob(d, false) });
         if (d.caged) Sprites.drawCage(ctx, sx, sy, 1);
@@ -162,9 +171,12 @@
     }
 
     if (map.dark) {
-      const p = G.player;
-      const lx = Math.round(p.px - cam.x) + 8, ly = Math.round(p.py - cam.y) + 8;
-      const rad = ctx.createRadialGradient(lx, ly, 18, lx, ly, 96);
+      const p = G.player, f = G.camFocus;
+      const lx = f ? Math.round(f.x - cam.x) : Math.round(p.px - cam.x) + 8;
+      const ly = f ? Math.round(f.y - cam.y) : Math.round(p.py - cam.y) + 8;
+      // G.dim (0..1) closes the light in; torches flicker while it's set
+      const dim = (G.dim || 0) * (0.9 + 0.1 * Math.sin(G.frame * 0.7));
+      const rad = ctx.createRadialGradient(lx, ly, 18 - dim * 10, lx, ly, 96 - dim * 50);
       rad.addColorStop(0, "rgba(8,6,12,0)");
       rad.addColorStop(0.6, "rgba(8,6,12,0.32)");
       rad.addColorStop(1, "rgba(5,4,9,0.85)");

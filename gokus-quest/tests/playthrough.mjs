@@ -33,6 +33,17 @@ async function skipDialogue() {
     await page.keyboard.press("Enter"); await wait(30); await page.keyboard.press("Enter"); await wait(30);
   }
 }
+// let a cutscene play out (pressing through its dialogue) until control returns
+async function playScene(maxMs = 20000) {
+  const end = Date.now() + maxMs;
+  while (Date.now() < end) {
+    const s = await ev(() => G.state);
+    if (s === "play" || s === "ending") return s;
+    if (s === "dialogue") { await page.keyboard.press("Enter"); await wait(30); await page.keyboard.press("Enter"); }
+    await wait(50);
+  }
+  return ev(() => G.state);
+}
 async function useAt(x, y, dir) {
   await ev(([x, y, dir]) => { G.player.px = x * 16; G.player.py = y * 16; G.player.dir = dir; Engine.updateCamera(); }, [x, y, dir]);
   await page.keyboard.press("e"); await wait(80);
@@ -89,11 +100,18 @@ try {
   check("Tom waits in his clearing", await ev(() => G.entities.forest.find(e => e.id === "boss").dormant));
   await ev(() => { G.upgrades.atk = 8; G.upgrades.hp = 8; G.upgrades.spd = 6; Engine.recalcPlayer(false); G.player.hp = G.player.maxHp; });
   await ev(() => { G.player.px = 21 * 16; G.player.py = 9 * 16; }); await wait(100);
-  check("Tom wakes with a confrontation", (await state()).state === "dialogue" && (await state()).quest === "boss");
-  await skipDialogue();
+  check("Tom's entrance scene starts", await ev(() => G.scene === true) && (await state()).quest === "boss");
+  await wait(600);
+  check("camera pans to Tom's clearing", await ev(() => !!G.camFocus && G.camFocus.x > 22 * 16));
+  check("Tom's entrance scene ends in the fight", (await playScene()) === "play" && await ev(() => G.entities.forest.find(e => e.id === "boss").state !== undefined && !G.scene));
   check("Tom defeated", await fight("forest", "boss", 150));
-  await wait(900); await skipDialogue();
+  check("Vesper's reveal scene starts", await ev(() => G.scene === true));
+  await wait(400);
+  check("beaten Tom stays on screen", await ev(() => G.entities.forest.some(e => e.type === "actor")));
+  check("Vesper's reveal plays through", (await playScene(30000)) === "play");
   check("quest 'tomBeaten', manor gate open", (await state()).quest === "tomBeaten" && await ev(() => G.maps.forest.object[9][26] === "dgate"));
+  check("Vesper took Chi Chi's cage", await ev(() => G.entities.forest.find(e => e.id === "chichi").gone));
+  check("scene actors cleaned up, camera back on Goku", await ev(() => !G.entities.forest.some(e => e.type === "actor") && !G.camFocus));
 
   // save + continue in the middle of the story
   await ev(() => Save.save());
@@ -114,8 +132,10 @@ try {
   await useAt(k[0], k[1] - 1, "down"); await skipDialogue();
   check("freeing a kitten", (await ev(() => Engine.freedCount())) === 1);
   await ev(() => { G.player.px = 10 * 16; G.player.py = 6 * 16; }); await wait(100);
-  check("Vesper wakes in the throne hall", (await state()).state === "dialogue");
-  await skipDialogue();
+  check("Vesper's throne scene starts", await ev(() => G.scene === true));
+  await wait(1200);
+  check("the manor darkens around her", await ev(() => G.dim > 0.5));
+  check("Vesper's throne scene ends in the fight", (await playScene()) === "play" && await ev(() => !G.dim));
   check("Vesper defeated", await fight("manor", "vesper", 300));
 
   // finale scene -> ending card

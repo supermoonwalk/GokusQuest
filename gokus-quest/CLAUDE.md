@@ -14,7 +14,7 @@ Browser pixel-art action RPG. Vanilla JS + Canvas 2D. Read README.md first.
 ## Direction
 Story-driven open-world top-down roguelike. Game & story plan (Dutch): `DESIGN.md` — follow its phases first.
 Functional test: `npm test` (tests/playthrough.mjs plays the whole story in Chromium; keep it passing, extend it with new story beats).
-Scripted scenes: `Cutscene.start([...steps])` in `src/game/cutscene.js`. Bosses with `wake: {x0,y0,x1,y1}` idle until the player enters that tile rect.
+Scripted scenes: `Cutscene.start([...steps])` in `src/game/cutscene.js` (helpers: wait, run, say, walkTo, panTo/panBack via `G.camFocus`, dimTo via `G.dim`, flash/smoke fx, `hop`/`shake` entity timers, `type: "actor"` entities for scene-only characters). No saving while `G.scene` is set. Bosses with `wake: {x0,y0,x1,y1}` idle until the player enters that tile rect.
 Solid entities (npc, chest, gear, caged captive, shop stall) block movement via `boxHitsEntity` in engine.js.
 
 ## Tech roadmap (after the DESIGN.md phases unless asked)

@@ -32,7 +32,7 @@
   // update, shopkeeper walk) comes from an interaction that can simply be repeated.
   function canSave() {
     const p = G.player;
-    return !!p && !p.dead && G.quest !== "done" &&
+    return !!p && !p.dead && G.quest !== "done" && !G.scene &&
       ["play", "menu", "map", "shop", "dialogue"].includes(G.state);
   }
 

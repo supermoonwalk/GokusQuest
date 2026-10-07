@@ -148,25 +148,11 @@
     e.dormant = false; e.state = "chase"; e.stateT = 0; e.atkCD = 70;
     const met = G.flags.bossMet || (G.flags.bossMet = {});
     const again = met[e.id]; met[e.id] = true;
-    if (!e.vesper) {
-      if (G.quest === "fighting") Engine.setQuest("boss");
-      const tom = () => UI.showDialogue("Tuxedo Tom", again
-        ? ["\"Back for another scratch, kid?\""]
-        : ["\"Well, well. Big brother came sniffing after all.\"",
-           "\"She's spoken for, kid. Turn around \u2014 or I'll send you home in pieces.\""]);
-      if (again) tom();
-      else UI.showDialogue("Chi Chi", ["*from inside a cage* GOKU! Over here!"], tom);
-    } else {
-      const freed = Engine.freedCount();
-      const vesper = () => UI.showDialogue("Madame Vesper", again
-        ? ["\"Persistent little stray. I do admire persistence... in a trophy.\""]
-        : [freed >= 5 ? "\"You emptied my cages. Every last one. Do you know how long that collection took me?\""
-                      : "\"Tom failed me. My shadows failed me. How tiresome.\"",
-           "\"No matter. Your sister stays \u2014 and you, little hero, will make a lovely new centrepiece.\""]);
-      if (again) vesper();
-      else UI.showDialogue(null, ["That lavender smell again \u2014 the same as the teacup in Chi Chi's cottage.",
-        "Madame Vesper rises from her throne."], vesper);
-    }
+    if (!e.vesper && G.quest === "fighting") Engine.setQuest("boss");
+    // first meeting: a full scene; a rematch after dying: one line and straight to it
+    if (!again) { if (e.vesper) Cutscene.vesperIntro(e); else Cutscene.tomIntro(e); return; }
+    if (e.vesper) UI.showDialogue("Madame Vesper", ["\"Persistent little stray. I do admire persistence... in a trophy.\""]);
+    else UI.showDialogue("Tuxedo Tom", ["\"Back for another scratch, kid?\""]);
   }
 
   function mbox(e) { return { ox: 3, oy: 6, w: 10, h: 9 }; }
@@ -369,6 +355,15 @@
         const px = f.x - cam.x, py = f.y - cam.y;
         ctx.save(); ctx.fillStyle = "#8fe04a"; ctx.beginPath(); ctx.arc(px, py, 3.5, 0, 6.28); ctx.fill();
         ctx.fillStyle = "#cffaa0"; ctx.beginPath(); ctx.arc(px, py, 1.5, 0, 6.28); ctx.fill(); ctx.restore();
+      } else if (f.kind === "flash") {
+        ctx.save(); ctx.globalAlpha = 0.7 * (1 - f.t / f.life); ctx.fillStyle = f.color || "#fff";
+        ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height); ctx.restore();
+      } else if (f.kind === "smoke") {
+        if (f.t < 0) continue;                 // staggered puffs wait their turn
+        const a = 1 - f.t / f.life, r = 3 + f.t * 0.6;
+        ctx.save(); ctx.globalAlpha = a * 0.8; ctx.fillStyle = f.color || "#5a2d6e";
+        ctx.beginPath(); ctx.arc(f.x - cam.x + Math.sin(f.t * 0.3 + f.x) * 2, f.y - cam.y - f.t * 0.4, r, 0, 6.28); ctx.fill();
+        ctx.restore();
       } else if (f.kind === "heart") {
         // rises and fades; a small pixel heart
         const a = 1 - f.t / f.life;
