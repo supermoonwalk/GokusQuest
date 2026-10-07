@@ -15,7 +15,7 @@ Needs a web server (scripts load as an ES module): use `npm run dev`, or serve `
 
 ## Gameplay
 
-- **Town** (safe): villager, Whiskers' Market (shop), Chi Chi's cottage (enterable house with clues).
+- **Town** (safe): villager, Whiskers' Market (shop), Chi Chi's cottage (enterable house with clues), Goku's hut (home base: rest, respawn, furniture with perks).
 - **Whiskerwood** (forest): Alley Kitten, Scruffy Stray, Mean Mouser, Shade Prowler, Hex the Hisser, boss Tuxedo Tom.
 - **Chapter II — Vesper's Manor**: Brutus, Shade Prowlers, Hex, 5 caged kittens to free, final boss Madame Vesper.
 - Quest chain: `start → searched → deduced → fighting → boss → tomBeaten → manor → done`.

@@ -87,7 +87,7 @@
   function render(ctx) {
     const map = G.maps[G.cur];
     const cam = G.camera;
-    ctx.fillStyle = (G.cur === "interior") ? "#2a2331" : (G.cur === "manor") ? "#140f1d"
+    ctx.fillStyle = (G.cur === "interior" || G.cur === "home") ? "#2a2331" : (G.cur === "manor") ? "#140f1d"
       : (G.cur === "forest") ? "#2c4d2a" : (G.cur === "shop") ? "#3a2a1c" : "#3a5a40";
     ctx.fillRect(0, 0, VPW, VPH);
 
@@ -115,7 +115,7 @@
       if (e.gone) continue;
       if (e.type === "monster" && !e.alive) continue;
       if ((e.type === "item" || e.type === "gear" || e.type === "chest") && e.taken) continue;
-      if (e.type === "sign" || e.type === "clue") continue;
+      if (e.type === "sign" || e.type === "clue" || e.type === "furniture") continue;
       drawables.push(e);
     }
     drawables.push(G.player);

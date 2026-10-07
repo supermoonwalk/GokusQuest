@@ -97,6 +97,7 @@
       let c = "#7fb069";
       const gid = map.ground[y][x], oid = map.object[y][x];
       if (gid === "path" || gid === "matground") c = "#d8b88c";
+      else if (gid === "strawmat") c = "#d8b45a";
       else if (gid === "water") c = "#6bb6d6";
       else if (gid === "floor" || gid === "rug") c = "#caa06a";
       else if (gid === "fgrass" || gid === "fgrass2") c = "#3f6b39";
@@ -110,6 +111,9 @@
         else if (oid === "flog" || oid === "stump") c = "#5a3f28";
         else if (oid === "farch") c = "#173016";
         else if (oid.indexOf("roof") === 0) c = "#b35a4f";
+        else if (oid.indexOf("hutRoof") === 0) c = "#c89a4a";
+        else if (oid.indexOf("hutWall") === 0 || oid === "hutWindow" || oid === "hutDoor") c = "#9c7448";
+        else if (["scratchpost", "fishbowl", "cushion", "trophies"].includes(oid)) c = "#8a6a44";
         else if (oid.indexOf("dwall") === 0) c = "#0f0c17";
         else if (oid === "swall" || oid === "scounter" || oid === "swares" || oid === "crate" || oid === "barrel") c = "#5a4029";
         else if (oid === "dgate") c = "#8fe04a";
@@ -302,6 +306,8 @@
     el("title").classList.remove("show");
     G.state = "play"; updateHud();
     showDialogue("Goku", [
+      "*Goku stretches on his scratchy straw mat. His hut is bare: no bed, no shelves, nothing.*",
+      "One day I'll make this place cosy. Whiskers sells furniture at his market...",
       "Chi Chi didn't show up for breakfast. She NEVER misses fish day.",
       "My little sister... something's wrong. I'd better check her cottage.",
       "(WASD/Arrows move \u00b7 SPACE swipe \u00b7 E interact \u00b7 J/K specials \u00b7 T treat \u00b7 M map)"

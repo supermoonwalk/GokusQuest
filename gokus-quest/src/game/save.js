@@ -56,13 +56,13 @@
       v: VERSION, at: Date.now(),
       cur: G.cur,
       player: { px: p.px, py: p.py, dir: p.dir, hp: p.hp },
-      spawn: G.spawn,
       coins: G.coins, treats: G.treats, chi: G.chi,
       inventory: G.inventory, flags: G.flags, quest: G.quest,
       upgrades: G.upgrades,
       gearOwned: G.gearOwned.map(g => Object.assign({}, g)),
       equipped: eqIndex,
       specials: G.specials, specialsOwned: G.specialsOwned,
+      home: G.home,
       entities,
     };
   }
@@ -100,7 +100,7 @@
     if (!d || !G.maps[d.cur]) return false;
 
     G.cur = d.cur;
-    G.spawn = d.spawn || G.spawn;
+    // the respawn point is always Goku's hut (older saves stored the town square)
     G.coins = d.coins; G.treats = d.treats; G.chi = d.chi || 0;
     G.inventory = d.inventory || [];
     G.flags = Object.assign(G.flags, d.flags);
@@ -108,6 +108,8 @@
     G.upgrades = Object.assign(G.upgrades, d.upgrades);
     G.specials = d.specials || [null, null];
     G.specialsOwned = d.specialsOwned || [];
+    G.home = d.home || {};
+    Engine.applyHome();
 
     G.gearOwned = d.gearOwned || [];
     for (const slot in G.equipped) {

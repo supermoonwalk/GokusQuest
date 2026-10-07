@@ -44,6 +44,13 @@
     object[6][1] = "fence"; object[7][1] = "fence";
     object[6][4] = "sign";
 
+    // Goku's hut (cols 17-19, rows 3-5): thatched, door at (18,5), path down to the main road
+    object[3][17] = "hutRoofL"; object[3][18] = "hutRoofM"; object[3][19] = "hutRoofR";
+    object[4][17] = "hutWallL"; object[4][18] = "hutWindow"; object[4][19] = "hutWallR";
+    object[5][17] = "hutWallL"; object[5][18] = "hutDoor";   object[5][19] = "hutWallR";
+    ground[6][18] = "matground"; ground[7][18] = "path";
+    object[6][16] = "sign";
+
     // forest entrance on the EAST edge (framed by pines), gated by a log until quest opens it
     object[8][23] = "farch";        // warp tile to forest
     object[7][23] = "ftree"; object[9][23] = "ftree";
@@ -118,6 +125,36 @@
     vesper:  { name: "Madame Vesper", kind: "vesper", hp: 120, atk: 11, def: 4, touch: 9, speed: 0.7, aggro: 220, coins: 0, big: true, boss: true, vesper: true },
   };
 
+  /* ---------------- GOKU'S HUT interior ----------------
+     Starts bare (a straw mat). Furniture bought from Whiskers appears in its
+     fixed spot (Engine.applyHome) and gives a lasting perk. */
+  const FURNITURE = {
+    bed:      { name: "Cosy Bed",       cost: 40, x: 1, y: 1, tile: "bed",         desc: "Resting also refills CHI. +6 max HP (well rested)." },
+    post:     { name: "Scratching Post", cost: 50, x: 7, y: 1, tile: "scratchpost", desc: "+1 Attack. Keeps the claws sharp." },
+    bowl:     { name: "Fish Bowl",      cost: 35, x: 7, y: 4, tile: "fishbowl",    desc: "A free Fish Treat waits here after every trip out." },
+    cushion:  { name: "Window Cushion", cost: 40, x: 3, y: 1, tile: "cushion",     desc: "+2 max CHI. Sunny naps build focus." },
+    trophies: { name: "Trophy Shelf",   cost: 25, x: 5, y: 1, tile: "trophies",    desc: "Shows off the bosses you've beaten." },
+    rug:      { name: "Woven Rug",      cost: 15, x: 4, y: 3, ground: "rug", cells: [[3, 3], [4, 3], [5, 3]], desc: "Purely cosy. Your paws will thank you." },
+    plant:    { name: "Catnip Plant",   cost: 12, x: 1, y: 5, tile: "plant",       desc: "A little green. Smells wonderful." },
+  };
+  function buildHome() {
+    const W = 9, H = 7;
+    const ground = grid(W, H, "floor");
+    const object = grid(W, H, null);
+    for (let x = 0; x < W; x++) { object[0][x] = "wallInt"; object[H - 1][x] = "wallInt"; }
+    for (let y = 0; y < H; y++) { object[y][0] = "wallInt"; object[y][W - 1] = "wallInt"; }
+    object[0][2] = "wallWindow"; object[0][6] = "wallWindow";
+    object[H - 1][4] = "exitInt";
+    ground[1][1] = "strawmat";
+    return { name: "home", w: W, h: H, ground, object, music: "home" };
+  }
+  function homeEntities() {
+    // invisible interaction points: the mat, plus one per furniture spot
+    const list = [{ type: "furniture", id: "f_mat", fid: "mat", x: 1, y: 1 }];
+    for (const fid in FURNITURE) if (fid !== "bed") list.push({ type: "furniture", id: "f_" + fid, fid, x: FURNITURE[fid].x, y: FURNITURE[fid].y });
+    return list;
+  }
+
   /* ---------------- ENTITIES ---------------- */
   function makeEntities() {
     return {
@@ -127,6 +164,7 @@
         { type: "chest", id: "c_yard", x: 2, y: 12, coins: 12 },
         { type: "gear", id: "g_field", gid: null, x: 5, y: 12 },
         { type: "sign", id: "sign", x: 4, y: 6, text: ["A hand-painted sign:", "\"Chi Chi's Cottage \u2014 knock first, the cat naps here.\""] },
+        { type: "sign", id: "hutsign", x: 16, y: 6, text: ["A crooked little sign:", "\"GOKU'S HUT. (It's a work in progress.)\""] },
         { type: "sign", id: "woodsign", x: 21, y: 8, text: ["A weathered signpost points east:", "\"\u2192 WHISKERWOOD. Mind the strays.\""] },
       ],
       forest: [
@@ -143,6 +181,7 @@
         { type: "gear", id: "g_forest", gid: null, x: 12, y: 14 },
         { type: "gear", id: "g_forest2", gid: null, x: 3, y: 5 },
       ],
+      home: homeEntities(),
       shop: [
         { type: "npc", id: "shopkeep", kind: "villager", x: 5, y: 3, dir: "down" },
       ],
@@ -166,6 +205,8 @@
   /* ---------------- WARPS ---------------- */
   const WARPS = [
     { map: "overworld", x: 3, y: 5, toMap: "interior", toX: 5, toY: 7, toDir: "up" },
+    { map: "overworld", x: 18, y: 5, toMap: "home", toX: 4, toY: 5, toDir: "up" },
+    { map: "home", x: 4, y: 6, toMap: "overworld", toX: 18, toY: 6, toDir: "down" },
     { map: "interior", x: 5, y: 8, toMap: "overworld", toX: 3, toY: 6, toDir: "down" },
     // shop interior -> town (walk onto the exit mat)
     { map: "shop", x: 5, y: 7, toMap: "overworld", toX: 8, toY: 12, toDir: "down" },
@@ -247,7 +288,7 @@
   function gearValue(inst) { return Math.max(3, Math.round(gearStat(inst) * (2 + inst.tier))); }
 
   window.World = {
-    buildOverworld, buildForest, buildShop, buildInterior: buildInteriorRef,
+    buildOverworld, buildForest, buildShop, buildInterior: buildInteriorRef, buildHome, FURNITURE,
     makeEntities, MONSTERS, WARPS, QUEST, PLAYER_BASE,
     UPGRADES, upgradeCost, SPECIALS, GEAR, TIERS,
     rollGear, tierName, tierColor, gearStat, gearLine, gearValue,

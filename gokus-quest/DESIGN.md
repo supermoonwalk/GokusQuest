@@ -41,7 +41,7 @@ komen terug (roguelike), maar je huis en dorp blijven: dat is je blijvende vooru
 | "180 Door Slam": "he KNOWS this one" zonder uitleg | Een spelletje dat ze als kittens speelden |
 
 ### Nog open (keuzes voor jou)
-- **Waar woont Goku?** Nu nergens. Dat is het perfecte haakje voor zijn eigen huis (fase 2).
+- ~~Waar woont Goku?~~ In zijn eigen hutje (fase 2).
 - **Wie is Vesper eigenlijk, en waarom "verzamelt" ze katten?** Er ligt ruimte voor een groter mysterie in hoofdstuk III.
 - **Waar komen de vijf kittens vandaan?** Ze zouden uit andere dorpen/gebieden kunnen komen → de wereld wordt groter.
 - **Namen:** "Goku" en "Chi Chi" zijn Dragon Ball-namen. Voor een publieke release moet dat anders (zie README).
@@ -62,15 +62,22 @@ automatische speltest (`npm test`).
   handlangers draaien zich naar je om.
 - Een herkansing na doodgaan geeft alleen een korte zin, geen hele scène.
 
-### Fase 2: Goku's eigen huis
-- Een klein, kaal **hutje** aan de rand van het dorp (alleen een strozak). Het wordt je respawn-plek.
-- **Meubels kopen** bij Whiskers en plaatsen in je huis. Elk meubel geeft een klein blijvend voordeel:
-  - Bed: volledig herstel + respawn hier
-  - Krabpaal: +aanval
-  - Visbak: elke ochtend een gratis treat
-  - Kussen bij het raam: +chi
-  - Trofeeënplank: toont verslagen eindbazen (alleen voor de sier)
-- Het huis groeit mee: een uitbreiding (extra kamer) als je genoeg munten hebt.
+### Fase 2: Goku's eigen huis ✅ (eerste versie)
+- Een kaal **hutje** met rieten dak en plankmuren rechtsboven in het dorp, met alleen een strozak.
+  Een nieuw spel begint hier, en na doodgaan word je hier wakker.
+- **Rusten** op de strozak herstelt je HP; met een bed ook je CHI.
+- **Meubels** koop je bij Whiskers ("Home Goods") en ze verschijnen meteen op hun vaste plek:
+  | Meubel | Prijs | Voordeel |
+  |---|---|---|
+  | Bed | 40 | Rusten vult ook CHI, +6 max HP |
+  | Krabpaal | 50 | +1 aanval |
+  | Visbak | 35 | Gratis treat na elke tocht (bos of landhuis) |
+  | Kussen bij het raam | 40 | +2 max CHI |
+  | Trofeeënplank | 25 | Toont verslagen eindbazen |
+  | Geweven kleed | 15 | Gezellig |
+  | Kattenkruid-plant | 12 | Gezellig |
+- Een lege plek in de hut vertelt je welk meubel daar past en wat het kost.
+- **Nog te doen:** uitbreiding met een extra kamer, meubels zelf verplaatsen, en Chi Chi die na de redding bij je intrekt.
 
 ### Fase 3: Het dorp groeit
 - Bevrijde kittens en geredde katten **verhuizen naar het dorp**, elk met een eigen huisje en functie:

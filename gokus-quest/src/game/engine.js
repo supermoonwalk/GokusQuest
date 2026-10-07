@@ -22,7 +22,7 @@
     coins: 0,
     flags: { searched: false, deduced: false, defeated: {}, cluesSeen: {}, ribbon: false,
              kittens: {}, enteredManor: false, learnedSlam: false, shopMoved: false,
-             metShop: false, tomBeaten: false, intro: false, bossMet: {} },
+             metShop: false, tomBeaten: false, intro: false, bossMet: {}, bowlReady: false },
     quest: "start",
     keys: {},
     menu: null,                      // 'quest' | 'inventory'
@@ -33,6 +33,7 @@
     equipped: { claws: null, collar: null, charm: null },
     specials: [null, null],          // two assignable slots (keys J / K)
     specialsOwned: [],               // unlocked special ids
+    home: {},                        // furniture owned for Goku's hut: { bed: true, ... }
     fx: [],                          // transient visual effects (combat.js pushes)
     coinDrops: [],                   // active coin pickups on current map
   };
@@ -104,26 +105,29 @@
     G.maps.shop = World.buildShop();
     G.maps.interior = World.buildInterior();
     G.maps.manor = World.buildManor();
+    G.maps.home = World.buildHome();
     const ent = World.makeEntities();
     G.entities.overworld = ent.overworld;
     G.entities.forest = ent.forest;
     G.entities.shop = ent.shop;
     G.entities.interior = ent.interior;
+    G.entities.home = ent.home;
     G.entities.manor = World.manorEntities();
     // give every entity pixel coords; init monster combat state
     for (const m in G.entities) for (const e of G.entities[m]) {
       e.px = e.x * TS; e.py = e.y * TS;
       if (e.type === "monster") Combat.initMonster(e);
     }
-    G.cur = "overworld";
+    G.cur = "home";
     const pb = World.PLAYER_BASE;
     G.player = {
-      px: 3 * TS, py: 7 * TS, dir: "down", vx: 0, vy: 0, moving: false,
+      px: 2 * TS, py: 2 * TS, dir: "down", vx: 0, vy: 0, moving: false,
       name: pb.name, baseMaxHp: pb.maxHp, baseAtk: pb.atk, baseDef: pb.def,
       maxHp: pb.maxHp, hp: pb.maxHp, atk: pb.atk, def: pb.def, spd: pb.spd,
       iframes: 0, atkCD: 0, atkTimer: 0, hurtFlash: 0, spin: 0, dead: false,
     };
-    G.spawn = { map: "overworld", x: 3, y: 7 };   // respawn point (town)
+    G.spawn = { map: "home", x: 2, y: 2 };        // respawn point: Goku's hut, by the mat
+    applyHome();
     recalcPlayer(false);
     G.state = "title";
   }
@@ -137,6 +141,10 @@
     let maxHp = p.baseMaxHp + u.hp * U.hp.step;
     let maxChi = 6 + u.chi * U.chi.step;
     let spd = World.PLAYER_BASE.spd + u.spd * U.spd.step;
+    // furniture perks (Goku's hut)
+    if (G.home.bed) maxHp += 6;
+    if (G.home.post) atk += 1;
+    if (G.home.cushion) maxChi += 2;
     // equipped gear
     const eq = G.equipped;
     if (eq.claws) atk += eq.claws.atk;
@@ -232,6 +240,7 @@
     G.fx = [];
     UI.flashTransition();
     updateCamera();
+    if (G.cur === "forest" || G.cur === "manor") G.flags.bowlReady = true;   // a trip out
     if (G.cur === "forest" && G.quest === "deduced") setQuest("fighting");
     const firstManor = G.cur === "manor" && !G.flags.enteredManor;
     const firstInterior = G.cur === "interior" && !G.flags.searched;
@@ -265,7 +274,7 @@
       if (e.gone) continue;
       if (e.type === "monster") continue;
       if ((e.type === "item" || e.type === "gear" || e.type === "chest") && e.taken) continue;
-      if (!["sign", "clue", "item", "gear", "chest", "npc", "captive", "shop"].includes(e.type)) continue;
+      if (!["sign", "clue", "item", "gear", "chest", "npc", "captive", "shop", "furniture"].includes(e.type)) continue;
       const ex = e.px + 8, ey = e.py + 8;
       const d = (ex - fx) * (ex - fx) + (ey - fy) * (ey - fy);
       if (d < bestD) { bestD = d; best = e; }
@@ -338,6 +347,70 @@
     if (e.type === "shop") { warpTo("shop", 5, 6, "up"); return; }
     if (e.type === "npc") { talkNPC(e); return; }
     if (e.type === "captive") { freeCaptive(e); return; }
+    if (e.type === "furniture") { useFurniture(e.fid); return; }
+  }
+
+  /* -------------------- GOKU'S HUT -------------------- */
+  // put owned furniture into the hut map
+  function applyHome() {
+    const map = G.maps.home; if (!map) return;
+    for (const fid in World.FURNITURE) {
+      if (!G.home[fid]) continue;
+      const f = World.FURNITURE[fid];
+      const cells = f.cells || [[f.x, f.y]];
+      for (const [x, y] of cells) {
+        if (f.ground) map.ground[y][x] = f.ground;
+        else map.object[y][x] = f.tile;
+      }
+    }
+  }
+  function buyFurniture(fid) {
+    const f = World.FURNITURE[fid];
+    if (!f || G.home[fid] || G.coins < f.cost) return false;
+    G.coins -= f.cost; G.home[fid] = true;
+    applyHome(); recalcPlayer(true); UI.updateHud();
+    return true;
+  }
+  function rest() {
+    const p = G.player;
+    p.hp = p.maxHp;
+    if (G.home.bed) G.chi = G.maxChi;
+    UI.updateHud();
+    Save.checkpoint();
+  }
+  function useFurniture(fid) {
+    const F = World.FURNITURE;
+    if (fid === "mat") {
+      if (G.home.bed) {
+        rest();
+        UI.showDialogue("Goku", ["*Goku curls up in his cosy bed for a proper nap.*", "Fully rested! HP and CHI restored."]);
+      } else {
+        rest();
+        UI.showDialogue("Goku", ["*Goku naps on his scratchy straw mat.*", "HP restored. (A real bed would help me focus, too. Whiskers sells one.)"]);
+      }
+      return;
+    }
+    const f = F[fid];
+    if (!G.home[fid]) {
+      UI.showDialogue("Goku", ["An empty corner. A " + f.name + " would fit nicely here.", "(Whiskers sells one for " + f.cost + " coins: " + f.desc + ")"]);
+      return;
+    }
+    if (fid === "bowl") {
+      if (G.flags.bowlReady) {
+        G.flags.bowlReady = false; G.treats++; UI.updateHud();
+        UI.showDialogue("Goku", ["*Something glints beside the fish bowl.* A Fish Treat! (+1)", "(Another one will be waiting after your next trip out.)"]);
+      } else UI.showDialogue("Goku", ["The goldfish blows a bubble at you.", "(Head out on an adventure. There'll be a treat waiting when you're back.)"]);
+      return;
+    }
+    if (fid === "trophies") {
+      const lines = ["Goku's trophy shelf."];
+      if (G.flags.tomBeaten) lines.push("Tuxedo Tom's crooked bowtie. A reminder: never back down.");
+      if (G.flags.defeated && G.flags.defeated.vesper) lines.push("Madame Vesper's jewelled collar. The dominion is undone.");
+      if (lines.length === 1) lines.push("...It's empty. For now.");
+      UI.showDialogue("Goku", lines);
+      return;
+    }
+    UI.showDialogue("Goku", [f.name + ". " + f.desc]);
   }
 
   function freeCaptive(e) {
@@ -462,7 +535,7 @@
       updateCamera(); UI.updateHud();
       UI.showDialogue("", [
         "Everything goes dark... then Goku shakes it off. (A cat always lands on its feet.)",
-        "You wake safe back in town, coins still in your pocket. But every stray and thug you beat has crept back.",
+        "You wake up at home in your hut, coins still in your pocket. But every stray and thug you beat has crept back.",
         "Spend your coins, get stronger, and try again."]);
     }, 480);
   }
@@ -510,6 +583,7 @@
     onMonsterDefeated, onPlayerDeath, recalcPlayer,
     equipGear, unequipSlot, sellGear, autoEquipIfBetter, freedCount,
     spawnCoins, updateScriptedNpcs, centerOf, moveEntity, updateCamera, useTreat,
+    applyHome, buyFurniture,
     VPW, VPH, TS, PBOX, tileSolid, boxHitsSolid,
   };
 })();

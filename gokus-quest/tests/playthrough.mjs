@@ -68,7 +68,15 @@ try {
   await page.goto(url); await ev(() => localStorage.clear()); await page.reload(); await wait(500);
   check("title shows NEW GAME only", !(await page.isVisible("#opt-continue")));
   await page.keyboard.press("Enter"); await wait(100); await skipDialogue();
-  check("game starts in town", (await state()).cur === "overworld");
+  check("game starts in Goku's hut", (await state()).cur === "home");
+  check("the hut starts bare (straw mat only)", await ev(() => Object.keys(G.home).length === 0 && G.maps.home.ground[1][1] === "strawmat"));
+  await useAt(4, 2, "down");
+  check("an empty furniture spot hints at the shop", (await ev(() => G.state)) === "dialogue" && (await page.textContent("#d-text")).length > 0);
+  await skipDialogue();
+  // walk out of the door for real
+  await ev(() => { G.player.px = 4 * 16; G.player.py = 4 * 16; });
+  await page.keyboard.down("s"); await wait(800); await page.keyboard.up("s"); await wait(200);
+  check("walking out of the hut leads into town", (await state()).cur === "overworld");
 
   // collisions: the market stall and Whiskers block movement
   await ev(() => { G.player.px = 8 * 16; G.player.py = 8 * 16; });
@@ -79,6 +87,26 @@ try {
   check("Whiskers talks", (await state()).state === "dialogue");
   await skipDialogue(); await wait(3000);
   check("Whiskers walks into his shop", await ev(() => G.flags.shopMoved));
+
+  // furniture: buy at Whiskers' market, it appears at home with its perk
+  await ev(() => { G.coins = 200; Engine.warpTo("shop", 5, 6, "up"); }); await skipDialogue();
+  await useAt(5, 5, "up");
+  check("shop sells Home Goods", (await ev(() => G.state)) === "shop" && (await page.$$("#shop-home .shop-row")).length === 7);
+  const atk0 = await ev(() => G.player.atk), hp0 = await ev(() => G.player.maxHp);
+  await page.click("#shop-home .shop-row:nth-child(1) .shop-buy");   // bed
+  await page.click("#shop-home .shop-row:nth-child(2) .shop-buy");   // scratching post
+  await page.click("#shop-home .shop-row:nth-child(3) .shop-buy");   // fish bowl
+  check("buying furniture costs coins", (await ev(() => G.coins)) === 200 - 40 - 50 - 35);
+  check("bed: +6 max HP, post: +1 attack", (await ev(() => G.player.maxHp)) === hp0 + 6 && (await ev(() => G.player.atk)) === atk0 + 1);
+  await page.keyboard.press("Escape"); await wait(50);
+  await ev(() => Engine.warpTo("home", 4, 5, "up")); await skipDialogue();
+  check("bought furniture stands in the hut", await ev(() => G.maps.home.object[1][1] === "bed" && G.maps.home.object[1][7] === "scratchpost"));
+  await ev(() => { G.player.hp = 3; G.chi = 0; });
+  await useAt(2, 1, "left"); await skipDialogue();
+  check("resting in the bed restores HP and CHI", await ev(() => G.player.hp === G.player.maxHp && G.chi === G.maxChi));
+  await useAt(7, 3, "down"); await skipDialogue();
+  check("no fish-bowl treat before a trip out", await ev(() => !G.flags.bowlReady));
+  await ev(() => Engine.warpTo("overworld", 18, 6, "down")); await skipDialogue();
 
   // forest is locked before the clues
   await ev(() => Engine.warpTo("overworld", 21, 8, "right")); await skipDialogue();
@@ -96,6 +124,14 @@ try {
   // forest + Tom
   await ev(() => Engine.warpTo("forest", 2, 9, "right")); await skipDialogue();
   check("entering forest -> quest 'fighting'", (await state()).quest === "fighting");
+  check("a trip out fills the fish bowl", await ev(() => G.flags.bowlReady));
+  // dying sends Goku home
+  await ev(() => Engine.onPlayerDeath()); await wait(700); await skipDialogue();
+  check("after a defeat Goku wakes up in his hut", (await state()).cur === "home");
+  const tr = await ev(() => G.treats);
+  await useAt(7, 3, "down"); await skipDialogue();
+  check("fish bowl gives a treat after the trip", (await ev(() => G.treats)) === tr + 1);
+  await ev(() => Engine.warpTo("forest", 2, 9, "right")); await skipDialogue();
   await wait(1200);
   check("Tom waits in his clearing", await ev(() => G.entities.forest.find(e => e.id === "boss").dormant));
   await ev(() => { G.upgrades.atk = 8; G.upgrades.hp = 8; G.upgrades.spd = 6; Engine.recalcPlayer(false); G.player.hp = G.player.maxHp; });
@@ -119,6 +155,7 @@ try {
   check("CONTINUE offered after reload", await page.isVisible("#opt-continue"));
   await page.keyboard.press("Enter"); await wait(200); await skipDialogue();
   check("continue restores progress", (await state()).quest === "tomBeaten" && await ev(() => G.maps.forest.object[9][26] === "dgate"));
+  check("continue keeps the furniture", await ev(() => G.home.bed && G.maps.home.object[1][1] === "bed"));
   await ev(() => { G.upgrades.atk = 8; G.upgrades.hp = 8; Engine.recalcPlayer(false); G.player.hp = G.player.maxHp; });
 
   // manor

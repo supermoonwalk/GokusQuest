@@ -25,7 +25,26 @@
     renderStats();
     renderSpecials();
     renderConsumables();
+    renderHome();
     renderGear();
+  }
+
+  // furniture for Goku's hut: bought once, appears at home with a lasting perk
+  function renderHome() {
+    const wrap = el("shop-home"); if (!wrap) return; wrap.innerHTML = "";
+    for (const fid in World.FURNITURE) {
+      const f = World.FURNITURE[fid], owned = !!G.home[fid];
+      const row = document.createElement("div"); row.className = "shop-row";
+      row.innerHTML = `<div class="shop-row-main"><span class="shop-name">${f.name}</span>
+        <span class="shop-desc">${f.desc}</span></div>`;
+      if (owned) {
+        const b = document.createElement("button"); b.className = "shop-buy maxed"; b.textContent = "AT HOME"; b.disabled = true;
+        row.appendChild(b);
+      } else {
+        row.appendChild(btn("BUY", f.cost, G.coins >= f.cost, false, () => { Engine.buyFurniture(fid); render(); }));
+      }
+      wrap.appendChild(row);
+    }
   }
 
   function btn(label, cost, affordable, maxed, onClick) {

@@ -399,5 +399,83 @@
     px(ctx, "#5b9e57", 3, 7, 1, 3); px(ctx, "#c96d6d", 10, 7, 1, 3);
   });
 
+  /* ---------------- GOKU'S HUT (exterior: thatched roof) ---------------- */
+  const THATCH = { o:"#6b4a1e", a:"#b0843c", b:"#d2a552", h:"#ecc775" };
+  const THATCH_ROWS = {
+    L: ["............oooo", ".........oooaaaa", "......ooooaabbab", "...oooaabbbabbhb",
+        "oooaabbabbbhbbab", "oaabbhbbabbbbabb", "oabbbbabbhbbabbb", "obababbbbbabbbab", "oooooooooooooooo"],
+    M: ["................", "................", "................", "................",
+        "hbabbbhbbabbbabh", "bbbabbbbabbhbbab", "babbbhbbbabbbbab", "bbabbbabbbbabbbb", "oooooooooooooooo"],
+    R: ["oooo............", "aaaaooo.........", "babaaaoooo......", "bhbbabbaaooo....",
+        "babbhbbbabaaooo.", "bbabbbbhbbabaaao", "bbbabbhbbbbbbabo", "babbbabbbbabbabo", "oooooooooooooooo"],
+  };
+  ["L", "M", "R"].forEach(side => reg("hutRoof" + side, true, (ctx) => {
+    eave(ctx, side);
+    paint(ctx, THATCH_ROWS[side].concat(new Array(7).fill("................")), THATCH);
+  }));
+
+  // plank walls: humbler than Chi Chi's plastered cottage
+  function planks(ctx, side) {
+    px(ctx, "#9c7448", 0, 0, 16, 16);
+    for (let y = 3; y < 16; y += 4) px(ctx, "#7a5530", 0, y, 16, 1);       // board seams
+    px(ctx, "#b08856", 0, 0, 16, 1);
+    px(ctx, "#6b4a2c", 5, 1, 1, 2); px(ctx, "#6b4a2c", 11, 9, 1, 2);       // knots
+    px(ctx, "#5f3f24", 0, 14, 16, 2);                                      // footing
+    if (side === "L") px(ctx, "#5f3f24", 0, 0, 2, 16);
+    if (side === "R") px(ctx, "#5f3f24", 14, 0, 2, 16);
+  }
+  reg("hutWallL", true, (ctx) => planks(ctx, "L"));
+  reg("hutWallR", true, (ctx) => planks(ctx, "R"));
+  reg("hutWindow", true, (ctx) => {
+    planks(ctx, "M");
+    px(ctx, "#5f3f24", 4, 3, 8, 7); px(ctx, "#bfe6f2", 5, 4, 6, 5); px(ctx, "#5f3f24", 7, 4, 1, 5);
+    px(ctx, "#c96d6d", 4, 3, 2, 3); px(ctx, "#c96d6d", 10, 3, 2, 3);       // little curtains
+  });
+  reg("hutDoor", false, (ctx) => {                                         // warp; not solid
+    planks(ctx, "M");
+    px(ctx, "#4a3320", 4, 4, 8, 12); px(ctx, "#6b4a2c", 5, 5, 6, 11);
+    px(ctx, "#4a3320", 5, 9, 6, 1); px(ctx, "#e0c060", 9, 10, 1, 1);
+  });
+
+  /* ---------------- GOKU'S HUT (interior furniture) ---------------- */
+  // straw sleeping mat: what Goku starts with
+  reg("strawmat", false, (ctx) => {
+    px(ctx, "#a07a48", 0, 0, 16, 16);
+    px(ctx, "#d8b45a", 2, 4, 12, 9); px(ctx, "#b8913e", 2, 4, 12, 1); px(ctx, "#b8913e", 2, 12, 12, 1);
+    for (let x = 3; x < 14; x += 2) px(ctx, "#c9a24a", x, 5, 1, 7);
+    px(ctx, "#e8cf86", 4, 6, 3, 2);
+  });
+  // scratching post: +attack
+  reg("scratchpost", true, (ctx) => {
+    px(ctx, "#6b4a2c", 3, 13, 10, 3);                       // base
+    px(ctx, "#c9a46a", 6, 2, 4, 11);                        // sisal column
+    for (let y = 3; y < 13; y += 2) px(ctx, "#a8824a", 6, y, 4, 1);
+    px(ctx, "#e05a5a", 5, 1, 6, 2);                         // red cap
+    px(ctx, "#ffd36a", 11, 4, 2, 2); px(ctx, "#7a5230", 11, 3, 1, 1);  // dangling toy
+  });
+  // fish bowl: a free treat after every trip out
+  reg("fishbowl", true, (ctx) => {
+    px(ctx, "#7a5230", 2, 12, 12, 4);                       // little table
+    px(ctx, "#9c7b4d", 2, 12, 12, 1);
+    px(ctx, "#bfe6f2", 4, 4, 8, 8); px(ctx, "#9cd3e6", 4, 7, 8, 5);
+    px(ctx, "#e6f6fb", 5, 4, 2, 2);
+    px(ctx, "#f08a3a", 7, 8, 3, 2); px(ctx, "#f08a3a", 10, 9, 1, 1); // goldfish
+  });
+  // window cushion: +max chi
+  reg("cushion", true, (ctx) => {
+    px(ctx, "#6b4a2c", 1, 11, 14, 2);
+    px(ctx, "#c96d6d", 2, 6, 12, 6); px(ctx, "#e08a8a", 3, 7, 10, 2);
+    px(ctx, "#a85050", 2, 11, 12, 1);
+    px(ctx, "#f6e7c4", 7, 8, 2, 2);                          // button
+  });
+  // trophy shelf: shows the bosses you've beaten
+  reg("trophies", true, (ctx) => {
+    px(ctx, "#5f3f24", 1, 2, 14, 12);
+    px(ctx, "#7a5230", 2, 3, 12, 10);
+    px(ctx, "#5f3f24", 2, 8, 12, 1);                         // middle plank
+    px(ctx, "#e8c34a", 4, 5, 3, 3); px(ctx, "#b9892f", 5, 7, 1, 1);  // small cup
+    px(ctx, "#3b3340", 9, 10, 5, 2); px(ctx, "#f6f6f6", 11, 10, 1, 2); // bowtie
+  });
+
   window.Tiles = { TILES, TS };
 })();
