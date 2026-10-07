@@ -26,6 +26,7 @@
     smith:     { a: "#5a5f6e", b: "#e08a3a", hem: "#3e424d" },
     carpenter: { a: "#5fa85f", b: "#f6e7c4", hem: "#3f7a3f" },
     dojo:      { a: "#3aa0a8", b: "#f4eee6", hem: "#2a6e74" },
+    baker:     { a: "#e0b54a", b: "#fbf2da", hem: "#a8802a" },
   };
   function drawShop(ctx, x, y, style) {
     const c = STALLS[style] || STALLS.whiskers;
@@ -45,6 +46,10 @@
     if (style === "smith") {                 // an anvil
       ctx.fillStyle = "#3e424d"; ctx.fillRect(x + 11, y + 18, 10, 3); ctx.fillRect(x + 14, y + 21, 4, 3);
       ctx.fillStyle = "#8a8f9c"; ctx.fillRect(x + 11, y + 18, 10, 1);
+    } else if (style === "baker") {          // a loaf of bread
+      ctx.fillStyle = "#c98a3a"; ctx.fillRect(x + 11, y + 18, 10, 5);
+      ctx.fillStyle = "#e8b060"; ctx.fillRect(x + 12, y + 18, 8, 2);
+      ctx.fillStyle = "#8a5a24"; ctx.fillRect(x + 13, y + 19, 1, 3); ctx.fillRect(x + 16, y + 19, 1, 3);
     } else if (style === "dojo") {           // a rolled scroll
       ctx.fillStyle = "#f4eee6"; ctx.fillRect(x + 11, y + 18, 10, 5);
       ctx.fillStyle = "#c96d6d"; ctx.fillRect(x + 10, y + 18, 2, 5); ctx.fillRect(x + 20, y + 18, 2, 5);
@@ -114,7 +119,8 @@
 
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
       if (x < 0 || y < 0 || x >= map.w || y >= map.h) continue;
-      const t = Tiles.TILES[map.ground[y][x]];
+      const gid = map.ground[y][x];
+      const t = Tiles.TILES[gid === "tideflat" && G.tideHigh ? "water" : gid];
       if (t) ctx.drawImage(t.canvas, Math.round(x * TS - cam.x), Math.round(y * TS - cam.y));
     }
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
@@ -164,6 +170,24 @@
         // the rescued villager minds their own stall, behind the counter
         if (d.owner) Sprites.drawCat(ctx, World.VILLAGERS[d.owner].kind, "down", sx, sy - 13, { bob: walkBob(d, false) });
         drawShop(ctx, sx - 8, sy - 14, d.style);
+      } else if (d.type === "switch" && d.look === "bell") {
+        // a brass bell on a beam; size by pitch (1 small .. 3 big); swings when rung
+        const r = 2 + d.pitch, sw = d.lit ? Math.round(Math.sin(G.frame / 3)) : 0, h = r * 2 + 2;
+        ctx.fillStyle = "#5f3f24"; ctx.fillRect(sx + 2, sy + 1, 12, 2);
+        ctx.fillStyle = d.lit ? "#ffe08a" : "#c9a23a";
+        // bell shape: narrow crown flaring out to a wide rim
+        for (let i = 0; i < h; i++) {
+          const half = Math.round(r * 0.5 + (r * 0.5) * (i / (h - 1)) * (i / (h - 1)) + (i === h - 1 ? 1 : 0));
+          ctx.fillRect(sx + 8 - half + sw, sy + 3 + i, half * 2, 1);
+        }
+        ctx.fillStyle = "#8a6a24"; ctx.fillRect(sx + 7 + sw, sy + 3 + h, 2, 2);          // clapper
+      } else if (d.type === "switch" && d.look === "shell") {
+        // a big scallop shell; glows while it's "open" (timed)
+        const on = d.lit > 0 && !(d.lit < 60 && Math.floor(G.frame / 4) % 2);
+        ctx.fillStyle = on ? "#ffd0e0" : "#d8b0b8"; ctx.fillRect(sx + 3, sy + 5, 10, 8);
+        ctx.fillStyle = on ? "#fff0f6" : "#e8c8d0"; for (let i = 0; i < 5; i++) ctx.fillRect(sx + 4 + i * 2, sy + 5, 1, 7);
+        ctx.fillStyle = "#a07880"; ctx.fillRect(sx + 6, sy + 13, 4, 2);
+        if (on) { ctx.save(); ctx.globalAlpha = 0.3; ctx.fillStyle = "#ffd0e0"; ctx.beginPath(); ctx.arc(sx + 8, sy + 9, 11, 0, 6.28); ctx.fill(); ctx.restore(); }
       } else if (d.type === "switch" && d.look === "rune") {
         // a standing stone with a sun glyph; glows teal once struck in the right order
         ctx.fillStyle = "#5a5f6e"; ctx.fillRect(sx + 3, sy + 1, 10, 14);
@@ -198,6 +222,16 @@
 
     // combat FX (slashes / shockwaves / floating text)
     Combat.renderFX(ctx, cam);
+
+    // tide gauge on tidal maps: LOW/HIGH with time left
+    if (map.tidal && G.state !== "title") {
+      const ti = Engine.tideInfo(), w = 52, frac = ti.left / 450;
+      const x = (VPW - w) / 2, y = 4;
+      ctx.fillStyle = "rgba(20,30,40,0.7)"; ctx.fillRect(x - 2, y - 2, w + 4, 13);
+      ctx.fillStyle = ti.high ? "#5ab0c8" : "#d8c48a"; ctx.fillRect(x, y + 8, Math.round(w * frac), 2);
+      ctx.font = "6px 'Press Start 2P', monospace"; ctx.fillStyle = "#fff7df";
+      ctx.fillText(ti.high ? "HIGH TIDE" : "LOW TIDE", x + 2, y + 6);
+    }
 
     // interaction hint
     if (G.state === "play") {

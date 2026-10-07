@@ -92,8 +92,8 @@ Na de redding opent die een eigen kraam in het dorp (`World.VILLAGERS` in `world
 | Whiskers | (er vanaf het begin) | **Alleen stats.** Speciale aanvallen en treats tijdelijk ook hier, tot de bakker en de dojo-meester er zijn |
 | Bramble, de smid | **Thornhollow:** zijpad naar het noorden bij de splitsing in het bos | **Bramble's Forge:** gear smeden (willekeurige kwaliteit), wisselen, verkopen |
 | Hazel, de timmerkat | **Vesper's kasteelterrein:** zijpad naar het zuiden | **Hazel's Workshop:** meubels + extra kamer |
-| *Bakker (later)* | ? | Treats (verhuizen van Whiskers) |
-| *Dojo-meester (later)* | ? | Speciale aanvallen (verhuizen van Whiskers) |
+| Biscuit, de bakker | **Zeeland:** de haven | **Biscuit's Bakery:** treats ✅ |
+| Meester Mochi, de dojo-kat | **Elderwood:** het heiligdom (quest) | **Mochi's Dojo:** speciale aanvallen ✅ |
 
 Nog te doen: kaartenmaker, tuin, het dorp zichtbaar laten veranderen per hoofdstuk (huisjes, avondlicht, rondlopende kittens).
 
@@ -138,6 +138,29 @@ over de **Getijdenkoningin** van Zeeland, die alle golven en vissen opeist (voor
 
 Mochi's dojo verhuist de **speciale aanvallen** van Whiskers naar haar kraam. De **bakker** (treats) komt nog.
 In het Elderwood zitten **3 verdwaalde kitties** (Pebble, Sprout, Fern). Chi Chi houdt thuis bij hoeveel je er gevonden hebt.
+
+#### Zeeland (gebied 2): af ✅
+Ontgrendeld door Thornmane: de **kustweg** ten zuiden van het dorp. **Nieuw mechaniek: getijden.** Elke 7,5 seconde
+wisselen eb en vloed (meter bovenin beeld). Bij vloed staat het wad onder water. Wie er dan nog staat, spoelt terug naar de kant.
+
+| Ruimte | Inhoud |
+|---|---|
+| Kustweg | Duinen, Gullcats en krabben; bordje: "alle vis is van de Koningin" |
+| Haven | Steiger over het water; **Biscuit de bakker** gevangen door krabben → **Biscuit's Bakery** (treats) |
+| Dijk | Zee links, polder rechts; bij eb verschijnt een zandbank naar het westen |
+| Verborgen baai | Alleen bij eb bereikbaar; **verstopt kitten** (Pearl) + kist |
+| Wad | Bij eb oversteken naar het eiland; de vuurtoren staat op de rotsen |
+| Eiland | **Kitten** (Splash) en de verzegelde poort van het Verzonken Paleis |
+| Vuurtoren (dungeon 1) | **Klokkenpuzzel**: klein, middel, groot. Boven: **Kapitein Meeuwbaard** → de Getijdensleutel |
+| Verzonken Paleis: getijdenzaal (dungeon 2) | **Schelpenpuzzel**: alle drie tegelijk open, en ze liggen op het wad (dus bij eb); **gekooid kitten** (Minnow) |
+| Verzonken Paleis: troonzaal | **Eindbaas: de Getijdenkoningin** |
+
+**De Getijdenkoningin** eist elke golf en elke vis op; de vissersdorpen hongeren. Ze houdt afstand en stuurt
+**golven** met één opening door de zaal. Onder de helft komen de golven sneller en roept ze krabben op.
+Verslagen geeft ze de vis terug en waarschuwt ze voor de **Sintelhertog** van Vuurland (voorstel; mag anders).
+
+Met Biscuit erbij doet **Whiskers nu echt alleen stats**: de treats zitten bij de bakker, de speciale aanvallen bij Mochi.
+Totaal verdwaalde kitties: 6 (3 in het Elderwood, 3 in Zeeland).
 
 ### Fase 4: Chi Chi als maatje (co-op)
 - Na de redding loopt Chi Chi met je mee: eerst als **computergestuurde bondgenoot**.

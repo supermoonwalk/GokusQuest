@@ -277,6 +277,7 @@
       ],
       oak_heart: [
         { type: "monster", id: "fang", mon: "fang", x: 8, y: 3, dir: "down", alive: true, boss: true, drop: "scroll",
+          dropText: ["Old Fang slumps. The scroll rolls across the floor.", "You got MASTER MOCHI'S SCROLL! Bring it back to her at the shrine."],
           wake: { x0: 1, y0: 1, x1: 14, y1: 8 },
           intro: ["A huge scarred tomcat uncurls in the dark, a scroll clamped in his teeth.",
                   "\"Mrrrh. Another little hero. The old cat's scroll stays with ME.\""] },

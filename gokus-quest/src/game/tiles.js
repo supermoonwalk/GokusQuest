@@ -485,5 +485,55 @@
     px(ctx, "#c96d6d", 3, 5, 10, 1);                                       // red sash
   });
 
+  /* ---------------- ZEELAND (coast) ---------------- */
+  function sandBase(ctx, a, b) {
+    px(ctx, a, 0, 0, 16, 16);
+    for (let i = 0; i < 7; i++) px(ctx, b, (i * 7) % 15, (i * 5 + 3) % 15, 1, 1);
+  }
+  reg("sand", false, (ctx) => sandBase(ctx, "#e8d39a", "#d4bc7e"));
+  reg("sand2", false, (ctx) => { sandBase(ctx, "#e8d39a", "#d4bc7e"); px(ctx, "#f6f0e0", 4, 9, 3, 2); px(ctx, "#e6a0a0", 11, 4, 2, 1); });
+  // wet tidal flat: walkable at low tide (render swaps in water at high tide)
+  reg("tideflat", false, (ctx) => {
+    sandBase(ctx, "#b8a77a", "#9c8c62");
+    px(ctx, "#a6c4c8", 2, 3, 5, 1); px(ctx, "#a6c4c8", 9, 10, 5, 1); px(ctx, "#a6c4c8", 6, 13, 3, 1);
+  });
+  reg("pier", false, (ctx) => {
+    px(ctx, "#a07a48", 0, 0, 16, 16);
+    for (let x = 0; x < 16; x += 4) px(ctx, "#7a5530", x, 0, 1, 16);
+    px(ctx, "#5f3f24", 0, 15, 16, 1);
+  });
+  reg("rock", true, (ctx) => {
+    px(ctx, "#5a6070", 2, 5, 12, 10); px(ctx, "#7a8090", 3, 4, 9, 6); px(ctx, "#9aa0ae", 5, 5, 4, 2);
+    px(ctx, "#3e424d", 2, 14, 12, 1);
+  });
+  reg("boat", true, (ctx) => {
+    px(ctx, "#2f6fa8", 0, 0, 16, 16);
+    px(ctx, "#7a4a2c", 1, 6, 14, 6); px(ctx, "#a06a3c", 2, 6, 12, 2); px(ctx, "#5a3318", 3, 11, 10, 2);
+    px(ctx, "#f6f0e0", 7, 1, 1, 5); px(ctx, "#f6f0e0", 8, 2, 4, 3);
+  });
+  reg("seawall", true, (ctx) => {
+    px(ctx, "#8a8f9c", 0, 0, 16, 16);
+    for (let y = 0; y < 16; y += 5) px(ctx, "#6a6f7c", 0, y, 16, 1);
+    px(ctx, "#6a6f7c", 7, 0, 1, 5); px(ctx, "#6a6f7c", 3, 5, 1, 5); px(ctx, "#6a6f7c", 11, 10, 1, 5);
+  });
+  reg("lighthouse", true, (ctx) => {        // red-and-white tower wall
+    px(ctx, "#f6f0e0", 0, 0, 16, 16);
+    px(ctx, "#c94a4a", 0, 0, 16, 5); px(ctx, "#c94a4a", 0, 10, 16, 5);
+    px(ctx, "#8a3030", 0, 15, 16, 1);
+  });
+  reg("pfloor", false, (ctx) => {           // sunken palace: blue tiles
+    px(ctx, "#2f5f7a", 0, 0, 16, 16); px(ctx, "#3f7a96", 1, 1, 6, 6); px(ctx, "#3f7a96", 9, 9, 6, 6);
+    px(ctx, "#5aa0b8", 2, 2, 2, 1);
+  });
+  reg("coral", true, (ctx) => {
+    px(ctx, "#2f5f7a", 0, 0, 16, 16);
+    px(ctx, "#e07a8a", 3, 6, 2, 9); px(ctx, "#e07a8a", 7, 3, 2, 12); px(ctx, "#e07a8a", 11, 7, 2, 8);
+    px(ctx, "#f0a0ae", 2, 5, 4, 2); px(ctx, "#f0a0ae", 6, 2, 4, 2); px(ctx, "#f0a0ae", 10, 6, 4, 2);
+  });
+  reg("pgate", true, (ctx) => {             // sealed palace gate (shell lock)
+    px(ctx, "#1f3f52", 0, 0, 16, 16); px(ctx, "#5aa0b8", 2, 0, 12, 16); px(ctx, "#2f5f7a", 3, 1, 10, 15);
+    px(ctx, "#f0d488", 6, 6, 4, 4); px(ctx, "#b9892f", 7, 7, 2, 2);
+  });
+
   window.Tiles = { TILES, TS };
 })();

@@ -63,7 +63,7 @@
   const freeze = () => {
     const p = G.player;
     p.atkTimer = 0; p.spin = 0; p.moving = false; p.iframes = 0; p.hurtFlash = 0; G.keys = {};
-    G.fx = G.fx.filter(f => f.kind !== "hex");
+    G.fx = G.fx.filter(f => f.kind !== "hex" && f.kind !== "wave");
   };
   const centre = (e) => ({ x: e.px + 8, y: e.py + 8 });
   const poof = (x, y) => G.fx.push({ kind: "poof", x, y, t: 0, life: 14 });
@@ -76,7 +76,7 @@
     const chichi = ents.find(e => e.id === "chichi2");
     const kits = ents.filter(e => e.kid);
     // hexes from the fight vanish, and her minions flee into the dark
-    G.fx = G.fx.filter(f => f.kind !== "hex");
+    G.fx = G.fx.filter(f => f.kind !== "hex" && f.kind !== "wave");
     for (const m of ents) if (m.type === "monster" && m.alive) {
       m.alive = false; m.dead = true; poof(m.px + 8, m.py + 8);
     }
@@ -275,5 +275,51 @@
     ]);
   }
 
-  window.Cutscene = { start, update, finale, tomIntro, vesperReveal, vesperIntro, wildKingIntro, wildKingDefeat, get active() { return !!steps; } };
+  /* ---------- THE TIDE QUEEN: her sunken hall ---------- */
+  function tideQueenIntro(q) {
+    const p = G.player;
+    freeze();
+    q.dir = "up";                                   // admiring her hoard
+    start([
+      panTo(q.px + 8, q.py + 4, 50),
+      say(null, ["Mountains of fish glitter in the dark: every catch Zeeland ever made, piled high around a coral throne."]),
+      run(() => { face(q, p); q.hop = 14; flash("#5ab0c8"); smoke(q.px + 8, q.py + 12, "#5ab0c8", 8); }),
+      wait(24),
+      say("The Tide Queen", [
+        "\"A LAND cat. Dripping on MY floor.\"",
+        "\"Every wave that rolls in is mine. Every fish that swims in it is mine. That is simply how tides WORK, darling.\"",
+        "\"Those little fishing villages? They borrowed MY sea for far too long. I'm only taking back what's mine.\""]),
+      say("Goku", ["They're starving. Nobody can own the sea."]),
+      run(() => { q.shake = 30; flash("#2f7a96"); Combat.popText(q.px - 8, q.py - 14, "HOW DARE...", "#9ad6ff"); }),
+      say("The Tide Queen", ["\"Then let the sea teach you some MANNERS!\""]),
+      panBack(),
+      run(() => { finish(); G.state = "play"; q.state = "chase"; q.stateT = 0; q.atkCD = 60; q.waveT = 60; }),
+    ]);
+  }
+  function tideQueenDefeat(q) {
+    const body = { type: "actor", kind: "tidequeen", scale: 2, px: q.px, py: q.py, dir: "down" };
+    freeze();
+    start([
+      run(() => G.entities[G.cur].push(body)),
+      wait(45),
+      panTo(q.px + 8, q.py + 4, 30),
+      say("The Tide Queen", [
+        "*the queen sags against her throne, soaked and furious*",
+        "\"Every tide goes out again... I just wanted ONE thing that always came back to me.\""]),
+      say("Goku", ["The tide comes back for everyone. That's the whole point."]),
+      say("The Tide Queen", [
+        "*a long sigh, like a wave pulling back* \"...Take the fish. Let the villages eat.\"",
+        "\"But beware, land cat. Inland, in VUURLAND, the EMBER DUKE claims every flame and every warm stone.\"",
+        "\"And HE does not sulk. He BURNS.\""]),
+      run(() => { smoke(body.px + 8, body.py + 8, "#5ab0c8", 10); }),
+      wait(10),
+      run(() => { G.entities[G.cur] = G.entities[G.cur].filter(e => e !== body); }),
+      wait(30),
+      say(null, ["The Tide Queen slips away into the deep. All over Zeeland, the fishing boats go back to sea."]),
+      panBack(),
+      run(() => { finish(); G.state = "play"; Engine.setQuest("vuurland"); Engine.applyVillagers(); Save.checkpoint(); }),
+    ]);
+  }
+
+  window.Cutscene = { start, update, finale, tomIntro, vesperReveal, vesperIntro, wildKingIntro, wildKingDefeat, tideQueenIntro, tideQueenDefeat, get active() { return !!steps; } };
 })();

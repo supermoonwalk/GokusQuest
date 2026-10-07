@@ -21,6 +21,7 @@ Route: town → forest (side trail → hollow) → gate → grounds (side path: 
 After Vesper (the prologue) the game continues: `UI.afterEnding()` → chapter III, `G.flags.chapter3`. Regions per DESIGN.md (Elderwood → Zeeland → Vuurland → Sahara), each region in its own `worldN.js` with `World.applyRegion(G)` for flag-driven map changes.
 Bosses (`boss: true`) never respawn; other monsters respawn after 3 min (`respawnStale` on map entry) and on death. Dungeon bosses: `wake` zone + `intro` lines + optional `drop`.
 Puzzles: `World.PUZZLES[id]` = { map, kind: timed | order | clear, barrier: {row, x0, x1} }; switches carry `group: id` (`look: "rune"` for stones); solved → `G.flags.puzzles[id]`, barrier cleared by `applyRegion`.
+Tides (`world5.js`): maps with `tidal: true` + `tideSafe: [x, y]`; "tideflat" ground is solid/water while `G.tideHigh` (shared 900-frame cycle in engine.js `updateTide`), the player is washed back to `tideSafe`. Warps can be locked: `needFlag`, `lockedText`, `setFlag`, `lockedQuest`. Boss drops: `drop` (flag), `dropText`, `dropQuest`.
 Huge bosses: monster def `huge: true` (drawn at 2x, bigger hit/body radius). Thornmane (`wildking`): anger + roars that summon `summoned: true` guards (removed on reset). Lost kitties: captive with `lostKitty` → `G.flags.kitties`.
 
 ## Tech roadmap (after the DESIGN.md phases unless asked)

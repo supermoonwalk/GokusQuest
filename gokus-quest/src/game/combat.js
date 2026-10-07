@@ -14,6 +14,7 @@
     e.speed = m.speed || 0.6; e.aggro = m.aggro || 70;
     e.coins = m.coins || 0; e.big = !!m.big; e.huge = !!m.huge; e.wildking = !!m.wildking;
     e.baseSpeed = e.speed; e.anger = 0; e.roars = 0;
+    e.tidequeen = !!m.tidequeen; e.waveT = 150; e.called = false;
     e.boss = !!e.boss || !!m.boss; e.vesper = !!e.vesper || !!m.vesper;
     e.state = "roam"; e.stateT = 0; e.dir = e.dir || "down";
     e.hurtFlash = 0; e.moving = false; e.alive = (e.alive !== false);
@@ -29,7 +30,7 @@
       e.alive = true; e.dead = false;
       e.hp = e.maxHp; e.state = "roam"; e.stateT = 0; e.atkCD = 90;
       e.px = e.x * TS; e.py = e.y * TS;
-      e.dormant = !!e.wake; e.enraged = false; e.anger = 0; e.roars = 0;
+      e.dormant = !!e.wake; e.enraged = false; e.anger = 0; e.roars = 0; e.called = false; e.waveT = 150;
       if (e.baseSpeed) e.speed = e.baseSpeed;
       delete G.flags.defeated[e.id];
     }
@@ -95,6 +96,7 @@
     }
 
     if (e.wildking) wildKing(e, dist);
+    if (e.tidequeen) tideQueen(e);
 
     // boss phase tweaks
     if (e.vesper && !e.enraged && e.hp <= e.maxHp * 0.5) {
@@ -157,6 +159,11 @@
     const again = met[e.id]; met[e.id] = true;
     if (e.id === "boss" && G.quest === "fighting") Engine.setQuest("boss");
     // first meeting: a full scene; a rematch after dying: one line and straight to it
+    if (e.tidequeen) {
+      if (!again) Cutscene.tideQueenIntro(e);
+      else UI.showDialogue("The Tide Queen", ["\"Back so soon, little drip? The sea ALWAYS comes back.\""]);
+      return;
+    }
     if (e.wildking) {
       if (!again) Cutscene.wildKingIntro(e);
       else UI.showDialogue("Thornmane", ["\"YOU AGAIN?! This is MY den! MINE!\""]);
@@ -191,16 +198,40 @@
       const a = Math.atan2(pc.y - (e.py + 8), pc.x - (e.px + 8));
       Engine.moveEntity(p, Math.cos(a) * 28, Math.sin(a) * 28, Engine.PBOX);
       // and his guards come running
-      const kinds = e.roars === 1 ? ["wildcat", "wildcat"] : ["mosscat", "wildcat"];
-      const map = G.maps[G.cur];
-      kinds.forEach((mon, i) => {
-        const x = i ? map.w - 3 : 2, y = 2 + e.roars * 2;
-        const g = { type: "monster", id: "summon" + e.roars + i, mon, x, y, dir: "down", alive: true, summoned: true };
-        g.px = x * TS; g.py = y * TS; initMonster(g); g.state = "chase";
-        G.entities[G.cur].push(g);
-        G.fx.push({ kind: "poof", x: g.px + 8, y: g.py + 8, t: 0, life: 14 });
-      });
+      summonGuards(e.roars === 1 ? ["wildcat", "wildcat"] : ["mosscat", "wildcat"], "r" + e.roars, 2 + e.roars * 2);
       e.state = "recover"; e.stateT = 0;
+    }
+  }
+  // a boss calls guards in from the sides of the room (they vanish again on reset)
+  function summonGuards(kinds, tag, row) {
+    const map = G.maps[G.cur];
+    kinds.forEach((mon, i) => {
+      const x = i ? map.w - 3 : 2, y = row;
+      const g = { type: "monster", id: "summon" + tag + i, mon, x, y, dir: "down", alive: true, summoned: true };
+      g.px = x * TS; g.py = y * TS; initMonster(g); g.state = "chase";
+      G.entities[G.cur].push(g);
+      G.fx.push({ kind: "poof", x: g.px + 8, y: g.py + 8, t: 0, life: 14 });
+    });
+  }
+
+  /* -------------------- The Tide Queen --------------------
+     Keeps her distance and sends WAVES: a wall of water sweeps across
+     the hall with one gap in it. Below half health the waves come
+     faster and her crab guards join in (once). */
+  function tideQueen(e) {
+    if (--e.waveT > 0) return;
+    const half = e.hp <= e.maxHp / 2;
+    e.waveT = half ? 120 : 190;
+    const map = G.maps[G.cur];
+    const fromLeft = Math.random() < 0.5;
+    const gap = 2 + Math.floor(Math.random() * (map.h - 5));        // tile row of the gap's middle
+    G.fx.push({ kind: "wave", x: fromLeft ? TS : (map.w - 1) * TS, vx: fromLeft ? 1.7 : -1.7,
+                gap, rows: map.h, t: 0, life: Math.ceil((map.w - 2) * TS / 1.7), dmg: e.atk - 2 });
+    popText(e.px - 8, e.py - 14, fromLeft ? "\u2192 WAVE!" : "WAVE! \u2190", "#9ad6ff");
+    if (half && !e.called) {
+      e.called = true;
+      popText(e.px - 8, e.py - 22, "GUARDS!", "#ff8a5a");
+      summonGuards(["crab", "crab"], "q", 6);
     }
   }
 
@@ -245,6 +276,13 @@
   function updateHexes() {
     const p = G.player, map = G.maps[G.cur];
     for (const f of G.fx) {
+      if (f.kind === "wave") {
+        f.x += f.vx;
+        const pc = Engine.centerOf(p), row = Math.floor(pc.y / TS);
+        const inGap = Math.abs(row - f.gap) <= 1;
+        if (!p.dead && p.iframes <= 0 && !inGap && Math.abs(pc.x - f.x) < 7) hurtPlayer(f.dmg);
+        continue;
+      }
       if (f.kind !== "hex") continue;
       f.x += f.vx; f.y += f.vy;
       if (Engine.tileSolid(map, Math.floor(f.x / TS), Math.floor(f.y / TS))) { f.t = f.life; continue; }
@@ -444,6 +482,15 @@
         const px = f.x - cam.x, py = f.y - cam.y;
         ctx.save(); ctx.fillStyle = "#8fe04a"; ctx.beginPath(); ctx.arc(px, py, 3.5, 0, 6.28); ctx.fill();
         ctx.fillStyle = "#cffaa0"; ctx.beginPath(); ctx.arc(px, py, 1.5, 0, 6.28); ctx.fill(); ctx.restore();
+      } else if (f.kind === "wave") {
+        // a wall of water with one gap (three tiles tall) to slip through
+        const x = Math.round(f.x - cam.x);
+        for (let r = 1; r < f.rows - 1; r++) {
+          if (Math.abs(r - f.gap) <= 1) continue;
+          const y = r * TS - cam.y;
+          ctx.fillStyle = "rgba(90,176,200,0.85)"; ctx.fillRect(x - 5, y, 10, TS);
+          ctx.fillStyle = "#e8f6fa"; ctx.fillRect(x + (f.vx > 0 ? 3 : -5), y + (r % 2) * 6, 2, 4);
+        }
       } else if (f.kind === "flash") {
         ctx.save(); ctx.globalAlpha = 0.7 * (1 - f.t / f.life); ctx.fillStyle = f.color || "#fff";
         ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height); ctx.restore();

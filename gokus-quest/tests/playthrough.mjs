@@ -361,6 +361,108 @@ try {
   await ev(() => Engine.onPlayerDeath()); await wait(700); await skipDialogue();
   check("Thornmane stays beaten after a defeat", await ev(() => !G.entities.den_b.find(e => e.id === "thornmane").alive && !G.entities.den_b.some(e => e.summoned)));
 
+  // ===== Zeeland =====
+  const lowTide = () => ev(() => { G.frame = Math.ceil(G.frame / 900) * 900 + 30; });
+  const highTide = () => ev(() => { G.frame = Math.ceil(G.frame / 900) * 900 + 480; });
+  check("the coast road south of town opens after Thornmane", await ev(() => G.maps.overworld.object[15][13] === "farch"));
+  await ev(() => { G.upgrades.atk = 8; G.upgrades.hp = 8; Engine.recalcPlayer(false); G.player.hp = G.player.maxHp; Engine.warpTo("overworld", 13, 13, "down"); });
+  await skipDialogue();
+  await page.keyboard.down("s"); await wait(700); await page.keyboard.up("s"); await skipDialogue();
+  check("the coast road leads to Zeeland", (await state()).cur === "zl_road" && (await state()).quest === "zl1");
+
+  // Biscuit the baker, caged at the end of the pier
+  await ev(() => { Engine.warpTo("zl_harbor", 1, 7, "right"); for (const m of G.entities.zl_harbor) if (m.type === "monster") { m.alive = false; m.deadAt = G.frame; } });
+  await skipDialogue();
+  await useAt(16, 7, "right");
+  check("Biscuit the baker can be freed", (await ev(() => G.state)) === "dialogue");
+  await skipDialogue();
+  check("Biscuit's bakery opens in town", await ev(() => G.villagers.baker && !G.entities.overworld.find(e => e.id === "stall_baker").gone));
+  await ev(() => Engine.warpTo("overworld", 15, 13, "down")); await skipDialogue();
+  await useAt(15, 13, "down");
+  check("the bakery sells the treats", (await page.textContent("#shop-title")) === "Biscuit's Bakery" && await visible("#shop-items"));
+  await page.keyboard.press("Escape"); await wait(50);
+  await ev(() => Engine.warpTo("shop", 5, 6, "up")); await skipDialogue();
+  await useAt(5, 5, "up");
+  check("...and Whiskers now only trains stats", !(await visible("#shop-items")) && !(await visible("#shop-specials")) && await visible("#shop-stats"));
+  await page.keyboard.press("Escape"); await wait(50);
+
+  // tides on the dike: the sandbar to the hidden cove
+  await ev(() => Engine.warpTo("zl_dike", 9, 10, "left")); await skipDialogue();
+  await lowTide(); await wait(50);
+  check("at low tide the sandbar is walkable", await ev(() => !Engine.tileSolid(G.maps.zl_dike, 4, 10)));
+  await ev(() => { G.player.px = 4 * 16; G.player.py = 10 * 16; });
+  await highTide(); await wait(100);
+  check("caught on the flats at high tide: washed back to the dike", await ev(() => Math.round(G.player.px / 16) === 9 && Math.round(G.player.py / 16) === 10 && Engine.tileSolid(G.maps.zl_dike, 4, 10)));
+  await lowTide();
+  await ev(() => { G.player.px = 2 * 16; G.player.py = 10 * 16; G.player.dir = "left"; });
+  await page.keyboard.down("a"); await wait(500); await page.keyboard.up("a"); await skipDialogue();
+  check("the sandbar leads to a hidden cove", (await state()).cur === "zl_cove");
+  await ev(() => { for (const m of G.entities.zl_cove) if (m.type === "monster") { m.alive = false; m.deadAt = G.frame; } });
+  await useAt(8, 2, "left"); await skipDialogue();
+  check("a lost kitty hides in the cove", await ev(() => G.flags.kitties.kit_zl1));
+
+  // flats, island, the sealed palace
+  await ev(() => Engine.warpTo("zl_flats", 10, 3, "down")); await skipDialogue();
+  await highTide(); await wait(50);
+  check("the flats are flooded at high tide", await ev(() => Engine.tileSolid(G.maps.zl_flats, 10, 8)));
+  await lowTide(); await wait(50);
+  check("...and walkable at low tide", await ev(() => !Engine.tileSolid(G.maps.zl_flats, 10, 8)));
+  await ev(() => Engine.warpTo("zl_island", 8, 10, "up")); await skipDialogue();
+  await ev(() => { for (const m of G.entities.zl_island) if (m.type === "monster") { m.alive = false; m.deadAt = G.frame; } });
+  await useAt(3, 4, "left"); await skipDialogue();
+  check("a lost kitty on the island", await ev(() => G.flags.kitties.kit_zl2));
+  await useAt(8, 3, "up");
+  check("the palace gate is sealed without a key", (await state()).cur === "zl_island" && (await state()).quest === "zl2");
+  await skipDialogue();
+
+  // lighthouse: bells, then Captain Gullbeard
+  await ev(() => Engine.warpTo("lh_a", 7, 10, "up")); await skipDialogue();
+  await ev(() => { for (const m of G.entities.lh_a) if (m.type === "monster") { m.alive = false; m.deadAt = G.frame; } });
+  await strike(3, 7, "up");                                   // the big bell first: wrong
+  check("ringing the bells in the wrong order resets them", await ev(() => G.entities.lh_a.every(e => !e.lit)));
+  await strike(7, 7, "up"); await strike(11, 7, "up"); await strike(3, 7, "up"); await skipDialogue();
+  check("small, middle, big: the stair gate opens", await ev(() => G.flags.puzzles.lhBells && G.maps.lh_a.object[3][7] === null));
+  await ev(() => Engine.warpTo("lh_b", 7, 10, "up")); await skipDialogue();
+  await ev(() => { G.player.px = 7 * 16; G.player.py = 6 * 16; }); await wait(150);
+  check("Captain Gullbeard wakes with his intro", (await ev(() => G.state)) === "dialogue");
+  await skipDialogue();
+  check("Captain Gullbeard defeated", await fight("lh_b", "gullbeard", 250));
+  await wait(700); await skipDialogue();
+  check("the Tide Key is yours", await ev(() => G.flags.tideKey) && (await state()).quest === "zl3");
+
+  // the sunken palace
+  await ev(() => Engine.warpTo("zl_island", 8, 4, "up")); await skipDialogue();
+  await useAt(8, 3, "up"); await wait(300); await skipDialogue();
+  check("the Tide Key opens the sunken palace", (await state()).cur === "palace_a" && await ev(() => G.flags.palaceOpen && G.maps.zl_island.object[2][8] === "ddoor"));
+  await ev(() => { for (const m of G.entities.palace_a) if (m.type === "monster") { m.alive = false; m.deadAt = G.frame; } });
+  await lowTide();
+  await strike(3, 4, "down"); await strike(14, 4, "down");
+  check("two open shells aren't enough", await ev(() => !G.flags.puzzles.palaceShells));
+  await strike(9, 6, "down"); await skipDialogue();
+  check("all three shells at once open the coral gate", await ev(() => G.flags.puzzles.palaceShells && G.maps.palace_a.object[2][9] === null));
+  await useAt(15, 10, "right"); await skipDialogue();
+  check("the Tide Queen kept a kitty caged", await ev(() => G.flags.kitties.kit_zl3 && Object.keys(G.flags.kitties).length === 6));
+  await ev(() => Engine.warpTo("palace_b", 9, 12, "up")); await skipDialogue();
+  await ev(() => { G.player.px = 9 * 16; G.player.py = 9 * 16; }); await wait(150);
+  check("the Tide Queen's entrance scene", (await playScene()) === "play");
+  let waved = false, called = false;
+  for (let i = 0; i < 500; i++) {
+    const s = await ev(() => { const t = G.entities.palace_b.find(e => e.id === "tidequeen"); if (!t.alive) return "dead";
+      const c = Engine.centerOf(G.player), dx = t.px + 8 - c.x, dy = t.py + 8 - c.y;
+      G.player.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? "left" : "right") : (dy < 0 ? "up" : "down");
+      G.player.hp = G.player.maxHp; return G.state + ":" + (G.fx.some(f => f.kind === "wave") ? "w" : "") + (t.called ? "c" : ""); });
+    if (s === "dead") break;
+    if (s.includes("w")) waved = true;
+    if (s.includes("c")) called = true;
+    if (s.startsWith("dialogue")) await skipDialogue();
+    await page.keyboard.press(" "); await wait(50);
+  }
+  check("she sends waves across the hall", waved);
+  check("below half health her crabs join in", called);
+  check("the Tide Queen defeated", await ev(() => !G.entities.palace_b.find(e => e.id === "tidequeen").alive));
+  check("her defeat scene plays", (await playScene(30000)) === "play");
+  check("quest: on to Vuurland", (await state()).quest === "vuurland" && await ev(() => G.flags.zlQueen && !G.fx.some(f => f.kind === "wave")));
+
   // regular enemies return after a while, bosses don't
   await ev(() => { for (const m of G.entities.ew_gate) if (m.type === "monster") { m.alive = false; m.dead = true; m.deadAt = G.frame - 60 * 60 * 4; } });
   await ev(() => Engine.warpTo("ew_gate", 10, 12, "up")); await skipDialogue();
@@ -370,6 +472,8 @@ try {
   await ev(() => Save.save()); await page.reload(); await wait(500);
   await page.keyboard.press("Enter"); await wait(300); await skipDialogue();
   check("continue after the ending keeps chapter III progress", await ev(() => G.villagers.dojo && G.flags.puzzles.oakLanterns && G.maps.oak_roots.object[4][8] === null && G.flags.chichiHome && G.maps.overworld.object[1][11] === null));
+  check("continue keeps Zeeland progress", await ev(() => G.villagers.baker && G.flags.palaceOpen && G.maps.zl_island.object[2][8] === "ddoor" &&
+    !G.entities.palace_b.find(e => e.id === "tidequeen").alive && G.maps.lh_a.object[3][7] === null && G.maps.overworld.object[15][13] === "farch"));
   check("continue keeps the deep Elderwood open", await ev(() => G.maps.ew_crossing.object[1][10] === null && G.maps.ew_glade.object[2][10] === null &&
     G.maps.den_a.object[3][8] === null && !G.entities.den_b.find(e => e.id === "thornmane").alive && G.maps.overworld.object[14][12] === "sign"));
 } catch (e) {

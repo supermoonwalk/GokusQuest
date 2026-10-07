@@ -46,6 +46,7 @@
     if (x < 0 || y < 0 || x >= map.w || y >= map.h) return true;
     const g = Tiles.TILES[map.ground[y][x]];
     if (g && g.solid) return true;
+    if (map.tidal && G.tideHigh && map.ground[y][x] === "tideflat") return true;
     const oid = map.object[y][x];
     if (oid) { const o = Tiles.TILES[oid]; if (o && o.solid) return true; }
     return false;
@@ -120,6 +121,16 @@
     G.maps.ew_overlook = World.buildEwOverlook();
     G.maps.den_a = World.buildDenA();
     G.maps.den_b = World.buildDenB();
+    G.maps.zl_road = World.buildZlRoad();
+    G.maps.zl_harbor = World.buildZlHarbor();
+    G.maps.zl_dike = World.buildZlDike();
+    G.maps.zl_cove = World.buildZlCove();
+    G.maps.zl_flats = World.buildZlFlats();
+    G.maps.zl_island = World.buildZlIsland();
+    G.maps.lh_a = World.buildLhA();
+    G.maps.lh_b = World.buildLhB();
+    G.maps.palace_a = World.buildPalaceA();
+    G.maps.palace_b = World.buildPalaceB();
     const ent = World.makeEntities();
     G.entities.overworld = ent.overworld;
     G.entities.forest = ent.forest;
@@ -129,6 +140,7 @@
     G.entities.hollow = World.hollowEntities();
     G.entities.grounds = World.groundsEntities();
     Object.assign(G.entities, World.elderwoodEntities());
+    Object.assign(G.entities, World.zeelandEntities());
     G.entities.manor = World.manorEntities();
     // give every entity pixel coords; init monster combat state
     for (const m in G.entities) for (const e of G.entities[m]) {
@@ -203,6 +215,7 @@
     G.frame++;
     if (G.state === "cutscene" && G.scene) { Cutscene.update(); Combat.tickFX(); updateCamera(); return; }
     if (G.state !== "play") return;
+    updateTide();
     handleMovement();
     Combat.update();
     pickupCoins();
@@ -210,6 +223,35 @@
     updateCamera();
     Save.tick();
   }
+
+  /* -------------------- TIDES (Zeeland) --------------------
+     One shared cycle: 7.5 s low, 7.5 s high. On a tidal map the
+     "tideflat" tiles are water while it's high; anyone out on them
+     is carried back to the map's safe spot. */
+  const TIDE_PERIOD = 900;
+  function tidePhase() { return G.frame % TIDE_PERIOD; }
+  function updateTide() {
+    const map = G.maps[G.cur];
+    if (!map.tidal) { G.tideHigh = false; return; }
+    const ph = tidePhase(), high = ph >= TIDE_PERIOD / 2;
+    const p = G.player;
+    if (ph === TIDE_PERIOD / 2 - 120) Combat.popText(p.px - 14, p.py - 6, "Tide's coming in!", "#9ad6ff");
+    G.tideHigh = high;
+    if (!high) return;
+    // caught out on the flats?
+    const x0 = Math.floor((p.px + PBOX.ox) / TS), x1 = Math.floor((p.px + PBOX.ox + PBOX.w - 1) / TS);
+    const y0 = Math.floor((p.py + PBOX.oy) / TS), y1 = Math.floor((p.py + PBOX.oy + PBOX.h - 1) / TS);
+    for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) {
+      if (map.ground[ty] && map.ground[ty][tx] === "tideflat") {
+        const [sx, sy] = map.tideSafe || [1, 1];
+        p.px = sx * TS; p.py = sy * TS; p.dir = "down";
+        UI.flashTransition(); updateCamera();
+        Combat.popText(p.px - 10, p.py - 6, "SPLASH! Washed back!", "#9ad6ff");
+        return;
+      }
+    }
+  }
+  function tideInfo() { return { high: tidePhase() >= TIDE_PERIOD / 2, left: TIDE_PERIOD / 2 - (tidePhase() % (TIDE_PERIOD / 2)) }; }
 
   function pickupCoins() {
     const pc = centerOf(G.player);
@@ -248,6 +290,15 @@
     }
   }
   function doWarp(w) {
+    if (w.needFlag && !G.flags[w.needFlag]) {
+      if (w.lockedQuest && G.quest === w.lockedQuest.from) setQuest(w.lockedQuest.to);
+      UI.showDialogue(null, w.lockedText);
+      return;
+    }
+    if (w.setFlag && !G.flags[w.setFlag]) {
+      G.flags[w.setFlag] = true;
+      if (World.applyRegion) World.applyRegion(G);
+    }
     if (w.needForest && !G.flags.deduced) {
       UI.showDialogue(null, ["A heavy fallen log blocks the woodland path.", "No reason to head in yet. Find out what happened to Chi Chi first."]);
       return;
@@ -262,6 +313,7 @@
     if (G.cur !== "overworld" && G.cur !== "home" && G.cur !== "shop" && G.cur !== "interior") G.flags.bowlReady = true;   // a trip out
     respawnStale(G.cur);
     if (G.cur === "forest" && G.quest === "deduced") setQuest("fighting");
+    if (G.cur === "zl_road" && G.quest === "zeeland") setQuest("zl1");
     const firstGrounds = G.cur === "grounds" && !G.flags.enteredGrounds;
     const firstManor = G.cur === "manor" && !G.flags.enteredManor;
     if (firstGrounds) { G.flags.enteredGrounds = true; setQuest("grounds"); }
@@ -658,10 +710,17 @@
       Cutscene.wildKingDefeat(e);
       return;
     }
-    if (e.drop === "scroll") {
-      G.flags.scroll = true;
-      setTimeout(() => UI.showDialogue(null, ["Old Fang slumps. The scroll rolls across the floor.",
-        "You got MASTER MOCHI'S SCROLL! Bring it back to her at the shrine."]), 500);
+    if (e.tidequeen) {
+      G.flags.zlQueen = true;
+      for (const m of G.entities[G.cur]) if (m.summoned && m.alive) { m.alive = false; G.fx.push({ kind: "poof", x: m.px + 8, y: m.py + 8, t: 0, life: 14 }); }
+      G.fx = G.fx.filter(f => f.kind !== "wave");
+      Cutscene.tideQueenDefeat(e);
+      return;
+    }
+    if (e.drop) {                                  // dungeon bosses drop a key item
+      G.flags[e.drop] = true;
+      if (e.dropQuest) setQuest(e.dropQuest);
+      setTimeout(() => UI.showDialogue(null, e.dropText || ["You found something!"]), 500);
       return;
     }
     if (e.id === "boss") {
@@ -700,7 +759,7 @@
     onMonsterDefeated, onPlayerDeath, recalcPlayer,
     equipGear, unequipSlot, sellGear, autoEquipIfBetter, freedCount,
     spawnCoins, updateScriptedNpcs, centerOf, moveEntity, updateCamera, useTreat,
-    applyHome, buyFurniture, applyVillagers, respawnStale,
+    applyHome, buyFurniture, applyVillagers, respawnStale, tideInfo,
     VPW, VPH, TS, PBOX, tileSolid, boxHitsSolid,
   };
 })();
