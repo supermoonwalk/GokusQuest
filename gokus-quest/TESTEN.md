@@ -20,9 +20,10 @@ Sluit PowerShell daarna en open hem opnieuw, zodat hij de nieuwe programma's ken
 
 ## 2. Eenmalig: het spel ophalen
 
-Open PowerShell. Je staat dan in je gebruikersmap (bijvoorbeeld `C:\Users\jouwnaam`). Typ regel voor regel:
+Open PowerShell via het startmenu (**niet** "als administrator"). Typ regel voor regel:
 
 ```powershell
+cd ~
 git clone https://github.com/supermoonwalk/GokusQuest.git
 cd GokusQuest
 git checkout claude/happy-tesla-76yyv2
@@ -53,6 +54,10 @@ npm run dev
 ```
 
 > Werk je liever vanaf `main`? Dan moet de pull request eerst samengevoegd zijn. Tot die tijd staat het nieuwste werk op de branch `claude/happy-tesla-76yyv2`.
+
+### Foutmelding "Permission denied" of `EPERM ... C:\WINDOWS\system32`?
+PowerShell staat dan in de Windows-systeemmap (dat gebeurt als je hem als administrator opent). Typ eerst
+`cd ~` om naar je eigen map te gaan, en doe de stappen daarna opnieuw.
 
 ### Foutmelding "running scripts is disabled on this system"?
 Dan blokkeert Windows het `npm`-script. Eenmalig oplossen in PowerShell:
