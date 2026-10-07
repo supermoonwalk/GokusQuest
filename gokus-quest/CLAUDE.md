@@ -18,6 +18,9 @@ Scripted scenes: `Cutscene.start([...steps])` in `src/game/cutscene.js` (helpers
 Solid entities (npc, chest, gear, caged captive, shop stall) block movement via `boxHitsEntity` in engine.js.
 Villagers (`world3.js`): a captive with `villager: id` is rescued into `G.villagers`; town stalls (`type: "shop"`, `requires`, `shopId`) appear via `Engine.applyVillagers()`. `Shop.open(shopId)` shows the `.shop-sec` blocks whose `data-shops` lists that id. Whiskers = stats (specials/treats only until a baker/dojo villager exists).
 Route: town → forest (side trail → hollow) → gate → grounds (side path: carpenter) → castle door → manor (throne hall).
+After Vesper (the prologue) the game continues: `UI.afterEnding()` → chapter III, `G.flags.chapter3`. Regions per DESIGN.md (Elderwood → Zeeland → Vuurland → Sahara), each region in its own `worldN.js` with `World.applyRegion(G)` for flag-driven map changes.
+Bosses (`boss: true`) never respawn; other monsters respawn after 3 min (`respawnStale` on map entry) and on death. Dungeon bosses: `wake` zone + `intro` lines + optional `drop`.
+Puzzles: `type: "switch"` lanterns (swipe to light, `lit` timer) → `G.flags.puzzles`. Lost kitties: captive with `lostKitty` → `G.flags.kitties`.
 
 ## Tech roadmap (after the DESIGN.md phases unless asked)
 1. Convert classic scripts to ES modules (`import`/`export`), entry `src/main.js`, keep behaviour identical. (Partly done: `src/main.js` imports the files in order so `vite build` bundles them; files still use globals.)

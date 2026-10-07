@@ -25,6 +25,7 @@
     whiskers:  { a: "#d8504f", b: "#f6e7c4", hem: "#a83736" },
     smith:     { a: "#5a5f6e", b: "#e08a3a", hem: "#3e424d" },
     carpenter: { a: "#5fa85f", b: "#f6e7c4", hem: "#3f7a3f" },
+    dojo:      { a: "#3aa0a8", b: "#f4eee6", hem: "#2a6e74" },
   };
   function drawShop(ctx, x, y, style) {
     const c = STALLS[style] || STALLS.whiskers;
@@ -44,6 +45,9 @@
     if (style === "smith") {                 // an anvil
       ctx.fillStyle = "#3e424d"; ctx.fillRect(x + 11, y + 18, 10, 3); ctx.fillRect(x + 14, y + 21, 4, 3);
       ctx.fillStyle = "#8a8f9c"; ctx.fillRect(x + 11, y + 18, 10, 1);
+    } else if (style === "dojo") {           // a rolled scroll
+      ctx.fillStyle = "#f4eee6"; ctx.fillRect(x + 11, y + 18, 10, 5);
+      ctx.fillStyle = "#c96d6d"; ctx.fillRect(x + 10, y + 18, 2, 5); ctx.fillRect(x + 20, y + 18, 2, 5);
     } else if (style === "carpenter") {      // a hammer
       ctx.fillStyle = "#c9a46a"; ctx.fillRect(x + 15, y + 18, 2, 7);
       ctx.fillStyle = "#5a5f6e"; ctx.fillRect(x + 12, y + 17, 8, 3);
@@ -159,6 +163,16 @@
         // the rescued villager minds their own stall, behind the counter
         if (d.owner) Sprites.drawCat(ctx, World.VILLAGERS[d.owner].kind, "down", sx, sy - 13, { bob: walkBob(d, false) });
         drawShop(ctx, sx - 8, sy - 14, d.style);
+      } else if (d.type === "switch") {
+        // an old lantern on a post; glows (and flickers) while lit
+        ctx.fillStyle = "#4a3320"; ctx.fillRect(sx + 7, sy + 6, 2, 10);
+        ctx.fillStyle = "#3b3340"; ctx.fillRect(sx + 4, sy, 8, 8);
+        const on = d.lit > 0, f = on && d.lit < 60 && Math.floor(G.frame / 4) % 2;   // sputters before going out
+        ctx.fillStyle = on && !f ? "#ffd36a" : "#2a2331"; ctx.fillRect(sx + 5, sy + 1, 6, 6);
+        if (on && !f) {
+          ctx.save(); ctx.globalAlpha = 0.25; ctx.fillStyle = "#ffd36a";
+          ctx.beginPath(); ctx.arc(sx + 8, sy + 4, 14, 0, 6.28); ctx.fill(); ctx.restore();
+        }
       } else if (d.type === "actor") {
         // scripted-only characters (Vesper appearing in the forest)
         ctx.save(); ctx.globalAlpha = d.alpha == null ? 1 : d.alpha;
@@ -197,6 +211,14 @@
       rad.addColorStop(0.6, "rgba(8,6,12,0.32)");
       rad.addColorStop(1, "rgba(5,4,9,0.85)");
       ctx.fillStyle = rad; ctx.fillRect(0, 0, VPW, VPH);
+      // lit lanterns shine through the dark
+      for (const e of (G.entities[G.cur] || [])) {
+        if (e.type !== "switch" || !(e.lit > 0) || (e.lit < 60 && Math.floor(G.frame / 4) % 2)) continue;
+        const gx = Math.round(e.px - cam.x) + 8, gy = Math.round(e.py - cam.y) + 4;
+        const glow = ctx.createRadialGradient(gx, gy, 2, gx, gy, 34);
+        glow.addColorStop(0, "rgba(255,211,106,0.55)"); glow.addColorStop(1, "rgba(255,211,106,0)");
+        ctx.fillStyle = glow; ctx.fillRect(gx - 34, gy - 34, 68, 68);
+      }
     }
   }
 

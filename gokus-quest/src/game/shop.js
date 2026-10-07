@@ -17,7 +17,10 @@
     const v = World.VILLAGERS[current];
     el("shop-title").textContent = v ? v.title : TITLES[current];
     document.querySelectorAll("#shop-panel .shop-sec").forEach(sec => {
-      sec.style.display = sec.dataset.shops.split(" ").includes(current) ? "" : "none";
+      // a section with data-moves-to belongs to that villager's shop once they're in town
+      const moved = sec.dataset.movesTo && G.villagers[sec.dataset.movesTo];
+      const here = moved ? current === sec.dataset.movesTo : sec.dataset.shops.split(" ")[0] === current;
+      sec.style.display = here ? "" : "none";
     });
     el("shop-msg").textContent = "";
     el("shop-panel").classList.add("show");

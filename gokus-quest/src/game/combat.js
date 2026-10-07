@@ -61,6 +61,7 @@
     }
     separateBodies();
     updateHexes();
+    updateSwitches();
     // coin drop physics
     for (const c of G.coinDrops) {
       c.t = (c.t || 0) + 1;
@@ -148,8 +149,12 @@
     e.dormant = false; e.state = "chase"; e.stateT = 0; e.atkCD = 70;
     const met = G.flags.bossMet || (G.flags.bossMet = {});
     const again = met[e.id]; met[e.id] = true;
-    if (!e.vesper && G.quest === "fighting") Engine.setQuest("boss");
+    if (e.id === "boss" && G.quest === "fighting") Engine.setQuest("boss");
     // first meeting: a full scene; a rematch after dying: one line and straight to it
+    if (!e.vesper && e.id !== "boss") {          // any other boss: its own intro, once
+      if (!again && e.intro) UI.showDialogue(World.MONSTERS[e.mon].name, e.intro);
+      return;
+    }
     if (!again) { if (e.vesper) Cutscene.vesperIntro(e); else Cutscene.tomIntro(e); return; }
     if (e.vesper) UI.showDialogue("Madame Vesper", ["\"Persistent little stray. I do admire persistence... in a trophy.\""]);
     else UI.showDialogue("Tuxedo Tom", ["\"Back for another scratch, kid?\""]);
@@ -238,6 +243,23 @@
       }
     }
     if (hitAny) { gainChi(2); }
+    for (const e of (G.entities[G.cur] || [])) {
+      if (e.type !== "switch") continue;
+      if (Math.hypot(e.px + 8 - fx, e.py + 8 - fy) < 14) { e.lit = 300; G.fx.push({ kind: "ring", x: e.px + 8, y: e.py + 6, t: 0, life: 12 }); }
+    }
+  }
+  // lantern puzzle: each lantern burns ~5 s; all three lit together solves it
+  function updateSwitches() {
+    const sw = (G.entities[G.cur] || []).filter(e => e.type === "switch");
+    if (!sw.length) return;
+    for (const e of sw) if (e.lit > 0) e.lit--;
+    const b = World.OAK_BARRIER;
+    if (G.cur === b.map && !G.flags.puzzles.oakLanterns && sw.every(e => e.lit > 0)) {
+      G.flags.puzzles.oakLanterns = true;
+      World.applyRegion(G);
+      G.fx.push({ kind: "flash", color: "#ffe08a", t: 0, life: 18 });
+      UI.showDialogue(null, ["All three lanterns blaze at once. The roots shudder... and pull back into the walls!"]);
+    }
   }
 
   function damageMonster(e, dmg, fromDir) {

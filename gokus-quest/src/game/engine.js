@@ -22,7 +22,8 @@
     coins: 0,
     flags: { searched: false, deduced: false, defeated: {}, cluesSeen: {}, ribbon: false,
              kittens: {}, enteredManor: false, learnedSlam: false, shopMoved: false,
-             metShop: false, tomBeaten: false, intro: false, bossMet: {}, bowlReady: false },
+             metShop: false, tomBeaten: false, intro: false, bossMet: {}, bowlReady: false,
+             puzzles: {}, kitties: {} },
     quest: "start",
     keys: {},
     menu: null,                      // 'quest' | 'inventory'
@@ -109,6 +110,11 @@
     G.maps.home = World.buildHome();
     G.maps.hollow = World.buildHollow();
     G.maps.grounds = World.buildGrounds();
+    G.maps.ew_gate = World.buildEwGate();
+    G.maps.ew_crossing = World.buildEwCrossing();
+    G.maps.ew_shrine = World.buildEwShrine();
+    G.maps.oak_roots = World.buildOakRoots();
+    G.maps.oak_heart = World.buildOakHeart();
     const ent = World.makeEntities();
     G.entities.overworld = ent.overworld;
     G.entities.forest = ent.forest;
@@ -117,6 +123,7 @@
     G.entities.home = ent.home;
     G.entities.hollow = World.hollowEntities();
     G.entities.grounds = World.groundsEntities();
+    Object.assign(G.entities, World.elderwoodEntities());
     G.entities.manor = World.manorEntities();
     // give every entity pixel coords; init monster combat state
     for (const m in G.entities) for (const e of G.entities[m]) {
@@ -247,7 +254,8 @@
     G.fx = [];
     UI.flashTransition();
     updateCamera();
-    if (["forest", "hollow", "grounds", "manor"].includes(G.cur)) G.flags.bowlReady = true;   // a trip out
+    if (G.cur !== "overworld" && G.cur !== "home" && G.cur !== "shop" && G.cur !== "interior") G.flags.bowlReady = true;   // a trip out
+    respawnStale(G.cur);
     if (G.cur === "forest" && G.quest === "deduced") setQuest("fighting");
     const firstGrounds = G.cur === "grounds" && !G.flags.enteredGrounds;
     const firstManor = G.cur === "manor" && !G.flags.enteredManor;
@@ -269,6 +277,18 @@
         "Chi Chi? ...Chi Chi, are you home?",
         "The cottage is ransacked. Something's wrong. Look for clues \u2014 walk up to things and press E."
       ]);
+    }
+  }
+  // fallen (non-boss) enemies return once they've been gone a while
+  const RESPAWN_FRAMES = 60 * 60 * 3;           // 3 minutes of play
+  function respawnStale(map) {
+    for (const e of (G.entities[map] || [])) {
+      if (e.type !== "monster" || e.alive || e.boss) continue;
+      if (e.deadAt == null) e.deadAt = G.frame;  // e.g. restored from a save: start the clock now
+      if (G.frame - e.deadAt < RESPAWN_FRAMES) continue;
+      e.alive = true; e.dead = false; e.hp = e.maxHp; e.state = "roam"; e.stateT = 0; e.atkCD = 90;
+      e.px = e.x * TS; e.py = e.y * TS; e.deadAt = null;
+      delete G.flags.defeated[e.id];
     }
   }
   function warpTo(map, x, y, dir) {
@@ -383,8 +403,11 @@
   function applyVillagers() {
     for (const m in G.entities) for (const e of G.entities[m]) {
       if (e.requires) e.gone = !G.villagers[e.requires];
+      if (e.requiresFlag) e.gone = !G.flags[e.requiresFlag];
       if (e.villager && G.villagers[e.villager]) { e.gone = true; e.caged = false; }
+      if (e.lostKitty && G.flags.kitties[e.id]) e.gone = true;
     }
+    if (World.applyRegion) World.applyRegion(G);
   }
 
   function buyFurniture(fid) {
@@ -438,6 +461,17 @@
   }
 
   function freeCaptive(e) {
+    if (e.lostKitty) {
+      G.flags.kitties[e.id] = true;
+      const n = Object.keys(G.flags.kitties).length;
+      UI.showDialogue(e.kname, ["*a tiny, shivering kitten peeks out from the leaves*",
+        "\"I got lost... are you taking me HOME?\"",
+        e.kname + " scampers off toward town. (Lost kitties found: " + n + ")"], () => {
+        G.fx.push({ kind: "poof", x: e.px + 8, y: e.py + 8, t: 0, life: 14 });
+        applyVillagers();
+      });
+      return;
+    }
     if (e.villager) {
       const v = World.VILLAGERS[e.villager];
       e.caged = false;
@@ -472,6 +506,36 @@
   }
 
   function talkNPC(e) {
+    if (e.id === "mochi") {
+      if (G.flags.scroll) {
+        UI.showDialogue("Master Mochi", [
+          "\"My scroll! The Seven Paws technique, safe again.\"",
+          "\"You fight with heart, little one, but your form is... enthusiastic. Come to my DOJO.\"",
+          "\"I will open it in your town. Special techniques are my business \u2014 not a market cat's.\""], () => {
+          G.villagers.dojo = true; setQuest("dojo");
+          G.fx.push({ kind: "poof", x: e.px + 8, y: e.py + 8, t: 0, life: 14 });
+          applyVillagers();
+          UI.showDialogue(null, ["NEW SHOP: Mochi's Dojo (east of the pond). Special moves are taught there now."]);
+        });
+      } else {
+        if (G.quest === "ch3") setQuest("scroll");
+        UI.showDialogue("Master Mochi", [
+          "\"Hm. A cat who walks the Elderwood without fear. Rare, these days.\"",
+          "\"I am Mochi, keeper of this shrine. A brute called OLD FANG stole my scroll and crawled into the HOLLOW OAK.\"",
+          "\"The roots inside answer only to light. Bring my scroll back, and I will teach you properly.\""]);
+      }
+      return;
+    }
+    if (e.id === "chichi_home") {
+      const lines = G.quest === "ch3"
+        ? ["\"Home, sweet hut! Though... you really need more furniture, brother.\"",
+           "\"The thorns north of town withered the moment Vesper fell. Grandpa said the ELDERWOOD lies beyond.\"",
+           "\"There are more lost kitties out there. Go on \u2014 I'll keep the fish warm.\""]
+        : ["\"Welcome back! Did you find any lost kitties out there?\"",
+           "(Lost kitties found: " + Object.keys(G.flags.kitties).length + ")"];
+      UI.showDialogue("Chi Chi", lines);
+      return;
+    }
     if (e.id === "villager") {
       if (!G.flags.metShop) {
         G.flags.metShop = true;
@@ -566,10 +630,7 @@
       p.hp = p.maxHp; G.chi = 0; p.iframes = 60; p.dead = false;
       p.vx = p.vy = 0; G.coinDrops = []; G.fx = [];
       // respawn fallen enemies (non-boss) so the woods refill
-      Combat.resetMap("forest");
-      Combat.resetMap("hollow");
-      Combat.resetMap("grounds");
-      Combat.resetMap("manor");
+      for (const m in G.entities) Combat.resetMap(m);
       updateCamera(); UI.updateHud();
       UI.showDialogue("", [
         "Everything goes dark... then Goku shakes it off. (A cat always lands on its feet.)",
@@ -580,12 +641,18 @@
 
   // called by combat.js when a monster's hp hits 0
   function onMonsterDefeated(e) {
-    e.alive = false; e.dead = true;
+    e.alive = false; e.dead = true; e.deadAt = G.frame;
     G.flags.defeated[e.id] = true;
     if (e.coins) spawnCoins(e.px, e.py, e.coins);
 
     if (e.vesper) { setQuest("done"); Cutscene.finale(); return; }
-    if (e.boss) {
+    if (e.drop === "scroll") {
+      G.flags.scroll = true;
+      setTimeout(() => UI.showDialogue(null, ["Old Fang slumps. The scroll rolls across the floor.",
+        "You got MASTER MOCHI'S SCROLL! Bring it back to her at the shrine."]), 500);
+      return;
+    }
+    if (e.id === "boss") {
       G.flags.tomBeaten = true;      // Chi Chi's cage is carried off during the reveal scene
       setQuest("tomBeaten");
       Cutscene.vesperReveal(e);     // opens the manor gate on screen
@@ -621,7 +688,7 @@
     onMonsterDefeated, onPlayerDeath, recalcPlayer,
     equipGear, unequipSlot, sellGear, autoEquipIfBetter, freedCount,
     spawnCoins, updateScriptedNpcs, centerOf, moveEntity, updateCamera, useTreat,
-    applyHome, buyFurniture, applyVillagers,
+    applyHome, buyFurniture, applyVillagers, respawnStale,
     VPW, VPH, TS, PBOX, tileSolid, boxHitsSolid,
   };
 })();

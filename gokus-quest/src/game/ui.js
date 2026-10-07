@@ -355,7 +355,6 @@
   let endAnim = null;
   function showFinale() {
     G.state = "ending";
-    Save.clear();             // story complete: next boot starts fresh
     el("ending").classList.add("show");
     el("ending-title").textContent = "HOME AT LAST";
     const freed = (Engine.freedCount ? Engine.freedCount() : 0);
@@ -412,10 +411,28 @@
   }
   let heartsEnd = [];
 
+  // after the ending card: the prologue is over, the real game begins (chapter III)
+  function afterEnding() {
+    el("ending").classList.remove("show");
+    G.flags.chapter3 = true; G.flags.chichiHome = true;
+    // Chi Chi and the kittens went home with Goku; the manor stays empty
+    for (const e of G.entities.manor) if (e.type === "captive") { e.gone = true; e.caged = false; }
+    Engine.applyVillagers();
+    G.state = "play";
+    Engine.setQuest("ch3");
+    Engine.warpTo("home", 4, 4, "up");
+    showDialogue("Chi Chi", [
+      "\"Home, sweet hut! ...Brother, why is there only a straw mat?\"",
+      "\"Never mind. Listen: the old thorn hedge NORTH of town withered the moment Vesper fell.\"",
+      "\"Grandpa used to say the ELDERWOOD lies beyond. And I heard there are more lost kitties out there.\""], () => {
+      showDialogue("Goku", ["Then the adventure isn't over yet."]);
+    });
+  }
+
   window.UI = {
     showDialogue, advanceDialogue, updateHud,
     toggleMenu, closeMenu, toggleMap, closeMap, drawMap,
-    flashTransition, startGame, drawTitleCat,
+    flashTransition, startGame, drawTitleCat, afterEnding,
     initTitleMenu, moveTitleSel, chooseTitle, continueGame, showSaved,
     showChapterCard, endChapterCard, showFinale,
     get dialogueOpen() { return !!D; },

@@ -20,7 +20,8 @@ Needs a web server (scripts load as an ES module): use `npm run dev`, or serve `
 - **Thornhollow** (side area): rescue Bramble the smith → Bramble's Forge opens in town (gear).
 - **Vesper's grounds** (after Tom): shades, hexes, Brutus; rescue Hazel the carpenter → Hazel's Workshop (furniture, extra room); castle door → throne hall.
 - **Chapter II — Vesper's Manor**: Brutus, Shade Prowlers, Hex, 5 caged kittens to free, final boss Madame Vesper.
-- Quest chain: `start → searched → deduced → fighting → boss → tomBeaten → manor → done`.
+- **Chapter III — Elderwood** (after Vesper, the game continues): north path from town, Master Mochi's scroll quest, Hollow Oak dungeon (lantern puzzle, Old Fang), a hidden lost kitty → Mochi's Dojo (special moves).
+- Quest chain: `start → searched → deduced → fighting → boss → tomBeaten → grounds → manor → done → ch3 → scroll → dojo`.
 - Economy: coins from monsters/chests → shop (stat upgrades, special moves, treats, gear sell).
 - Gear slots: claws / collar / charm, with tiers and random rolls.
 
@@ -36,6 +37,7 @@ Controls: WASD/arrows move · Space swipe · E interact · J/K specials · T tre
 | `src/game/tiles.js`, `tiles2.js`, `tiles3.js` | 16×16 tiles baked to offscreen canvases (town, manor, forest/shop) |
 | `src/game/world.js`, `world2.js` | Maps, entities, monster stats, quest steps, warps, economy |
 | `src/game/world3.js` | Rescuable villagers + their town stalls, Thornhollow, Vesper's grounds, route/warp changes |
+| `src/game/world4.js` | Chapter III region 1: the Elderwood (gate, crossing, shrine, Hollow Oak dungeon), Master Mochi |
 | `src/game/engine.js` | Global state `G`, movement, AABB collision, camera, interaction, warps |
 | `src/game/render.js` | Per-frame world drawing |
 | `src/game/combat.js` | Real-time combat, enemy AI, specials, FX |

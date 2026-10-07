@@ -97,17 +97,47 @@ Na de redding opent die een eigen kraam in het dorp (`World.VILLAGERS` in `world
 
 Nog te doen: kaartenmaker, tuin, het dorp zichtbaar laten veranderen per hoofdstuk (huisjes, avondlicht, rondlopende kittens).
 
+### Fase 3b: Na Vesper begint het echte spel
+Het verhaal van Tom en Vesper (hoofdstuk I & II) is de **proloog**. Na Vesper speel je gewoon verder:
+- Je kunt overal terug naartoe waar je al geweest bent. **Tom en Vesper (en elke eindbaas) blijven verslagen.**
+- Gewone vijanden **komen terug**: na een paar minuten, en altijd als je doodgaat.
+- Chi Chi trekt bij Goku in de hut.
+- Er zijn **4 nieuwe gebieden**, elk met een eigen thema. Elk gebied ontgrendel je door de eindbaas van het
+  vorige gebied te verslaan:
+
+| # | Gebied | Thema | Ontgrendeld door |
+|---|---|---|---|
+| 1 | **Elderwood** | Oud, magisch bos | Vesper verslaan |
+| 2 | **Zeeland** | Kust, dijken, eilandjes, getijden | Eindbaas van Elderwood |
+| 3 | **Vuurland** | Vulkanen, lava, as | Eindbaas van Zeeland |
+| 4 | **Sahara** | Woestijn, ruïnes, oases | Eindbaas van Vuurland |
+
+Elk gebied krijgt ongeveer **10 ruimtes**, waarvan **2 dungeons**, met quests, te redden kitties, geheimen
+en puzzels. Geredde dorpelingen openen winkels in het dorp (zie fase 3).
+
+#### Elderwood (gebied 1): stand van zaken
+| Ruimte | Status | Inhoud |
+|---|---|---|
+| Elderwood-poort | ✅ | Ingang vanuit het noorden van het dorp (de doornhaag verwelkt als Vesper valt) |
+| Mosoversteek | ✅ | Rivier met brug, **verstopt kitten** (geheim), omgevallen reuzenboom blokkeert het noorden |
+| Heiligdom | ✅ | **Meester Mochi**, de dojo-kat: quest "haal mijn gestolen rol terug" |
+| Holle Eik: wortels (dungeon 1) | ✅ | **Lantaarnpuzzel**: steek 3 lantaarns aan voor ze doven |
+| Holle Eik: hart (dungeon 1) | ✅ | **Mini-baas Oude Fang**, die de rol bewaakt |
+| Ruimtes 6–9 + dungeon 2 + eindbaas | ⬜ | Achter de omgevallen reuzenboom (noorden van de Mosoversteek) |
+
+Mochi's dojo verhuist de **speciale aanvallen** van Whiskers naar haar kraam. De **bakker** (treats) komt nog.
+
 ### Fase 4: Chi Chi als maatje (co-op)
 - Na de redding loopt Chi Chi met je mee: eerst als **computergestuurde bondgenoot**.
 - Daarna een **tweede speler op hetzelfde toetsenbord/controller** (lokale co-op).
 - Samen-aanvallen en puzzels die je alleen met z'n tweeën kunt oplossen.
 
-### Fase 5: Een grotere wereld (hoofdstuk III+)
-- Nieuwe gebieden rond het dorp: rivier & haven, bergen, grotten, een stad met katten-adel.
-- **Puzzels:** drukplaten, blokken schuiven, sleutels, lichtpuzzels in de grotten.
+### Fase 5: De rest van de wereld
+- Elderwood afmaken, daarna Zeeland, Vuurland en Sahara (zie fase 3b).
+- **Puzzels:** lantaarns (✅), drukplaten, blokken schuiven, sleutels, getijden (Zeeland), lavastromen (Vuurland).
 - **Roguelike-kerkers:** steeds anders opgebouwde lagen met een eindbaas, beloningen voor het dorp.
-- Verhaal: Vesper was niet de enige "verzamelaar". De vijf kittens komen uit verschillende gebieden en
-  Goku & Chi Chi brengen ze terug naar hun families.
+- Verhaal: Vesper was niet de enige "verzamelaar". Kitties uit alle gebieden zijn verdwenen, en
+  Goku & Chi Chi brengen ze terug naar huis.
 
 ### Later (techniek & release)
 Touch/controller-besturing, geluid & muziek, pauze/instellingen-menu, fonts lokaal, namen wijzigen,

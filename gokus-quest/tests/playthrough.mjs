@@ -241,7 +241,75 @@ try {
   }
   check("reunion plays and ends on the ending card", (await state()).state === "ending");
   check("Chi Chi out of her cage", await ev(() => !G.entities.manor.find(e => e.id === "chichi2").caged));
-  check("save cleared after finishing", !(await ev(() => Save.has())));
+  check("the ending card offers to continue", (await page.textContent("#ending .press")).includes("continue"));
+
+  // ===== Chapter III: the real game begins =====
+  await page.keyboard.press("Enter"); await wait(300);
+  check("after the ending Goku is home with Chi Chi", (await state()).cur === "home" && await ev(() => !G.entities.home.find(e => e.id === "chichi_home").gone));
+  await skipDialogue();
+  check("quest: chapter III", (await state()).quest === "ch3");
+  check("Vesper and Tom stay beaten", await ev(() => !G.entities.manor.find(e => e.id === "vesper").alive && !G.entities.forest.find(e => e.id === "boss").alive));
+  check("the kittens went home (manor cages empty)", await ev(() => G.entities.manor.filter(e => e.type === "captive").every(e => e.gone)));
+  check("the game keeps saving after the ending", await ev(() => Save.has()));
+  check("the thorn hedge north of town has withered", await ev(() => G.maps.overworld.object[1][11] === null));
+  await ev(() => { G.upgrades.atk = 8; G.upgrades.hp = 8; Engine.recalcPlayer(false); G.player.hp = G.player.maxHp; });
+  await ev(() => Engine.warpTo("overworld", 11, 2, "up")); await skipDialogue();
+  await page.keyboard.down("w"); await wait(700); await page.keyboard.up("w"); await skipDialogue();
+  check("the north path leads into the Elderwood", (await state()).cur === "ew_gate");
+
+  // a lost kitten hides behind a hedge in the mossy crossing
+  await ev(() => Engine.warpTo("ew_crossing", 10, 12, "up")); await skipDialogue();
+  check("a fallen giant tree blocks the north of the crossing", await ev(() => G.maps.ew_crossing.object[1][10] === "flog"));
+  await useAt(3, 2, "left");
+  check("finding a lost kitty", (await ev(() => G.state)) === "dialogue");
+  await skipDialogue();
+  check("lost kitty counted and sent home", await ev(() => G.flags.kitties.kit_ew1 && G.entities.ew_crossing.find(e => e.id === "kit_ew1").gone));
+
+  // Master Mochi's quest
+  await ev(() => Engine.warpTo("ew_shrine", 1, 7, "right")); await skipDialogue();
+  await useAt(12, 7, "right");
+  check("Master Mochi asks for her scroll", (await ev(() => G.state)) === "dialogue" && (await state()).quest === "scroll");
+  await skipDialogue();
+  await useAt(9, 3, "up"); await wait(300); await skipDialogue();
+  check("the Hollow Oak door leads into the dungeon", (await state()).cur === "oak_roots");
+  check("roots block the way at first", await ev(() => G.maps.oak_roots.object[4][8] === "flog"));
+  await ev(() => { for (const m of G.entities.oak_roots) if (m.type === "monster") { m.alive = false; m.deadAt = G.frame; } });
+  const lanterns = [[3, 6, "left"], [12, 6, "right"], [8, 8, "down"]];
+  for (const [i, [x, y, d]] of lanterns.entries()) {
+    await ev(([x, y, d]) => { G.player.px = x * 16; G.player.py = y * 16; G.player.dir = d; G.player.atkCD = 0; }, [x, y, d]);
+    await page.keyboard.press(" "); await wait(250);
+    if (i === 0) check("one lit lantern alone doesn't lift the roots", await ev(() => G.entities.oak_roots.find(e => e.id === "lamp1").lit > 0 && !G.flags.puzzles.oakLanterns));
+  }
+  await skipDialogue();
+  check("lighting all three lanterns lifts the roots", await ev(() => G.flags.puzzles.oakLanterns && G.maps.oak_roots.object[4][8] === null));
+  await ev(() => Engine.warpTo("oak_heart", 8, 10, "up")); await skipDialogue();
+  await ev(() => { G.player.px = 8 * 16; G.player.py = 7 * 16; }); await wait(150);
+  check("Old Fang wakes with his own intro", (await ev(() => G.state)) === "dialogue");
+  await skipDialogue();
+  check("Old Fang defeated", await fight("oak_heart", "fang", 300));
+  await wait(700); await skipDialogue();
+  check("the scroll is recovered", await ev(() => G.flags.scroll));
+  await ev(() => Engine.warpTo("ew_shrine", 11, 7, "right")); await skipDialogue();
+  await useAt(12, 7, "right"); await skipDialogue();
+  check("Mochi moves to town and opens her dojo", await ev(() => G.villagers.dojo && !G.entities.overworld.find(e => e.id === "stall_dojo").gone) && (await state()).quest === "dojo");
+  await ev(() => Engine.warpTo("overworld", 20, 9, "down")); await skipDialogue();
+  await useAt(20, 10, "down");
+  check("the dojo teaches the special moves", (await page.textContent("#shop-title")) === "Mochi's Dojo" && await visible("#shop-specials"));
+  await page.keyboard.press("Escape"); await wait(50);
+  await ev(() => Engine.warpTo("shop", 5, 6, "up")); await skipDialogue();
+  await useAt(5, 5, "up");
+  check("...and Whiskers no longer does", !(await visible("#shop-specials")) && await visible("#shop-stats"));
+  await page.keyboard.press("Escape"); await wait(50);
+
+  // regular enemies return after a while, bosses don't
+  await ev(() => { for (const m of G.entities.ew_gate) if (m.type === "monster") { m.alive = false; m.dead = true; m.deadAt = G.frame - 60 * 60 * 4; } });
+  await ev(() => Engine.warpTo("ew_gate", 10, 12, "up")); await skipDialogue();
+  check("regular enemies respawn after a few minutes", await ev(() => G.entities.ew_gate.filter(e => e.type === "monster").every(e => e.alive)));
+  await ev(() => Engine.warpTo("oak_heart", 8, 10, "up")); await skipDialogue();
+  check("dungeon bosses stay beaten", await ev(() => !G.entities.oak_heart.find(e => e.id === "fang").alive));
+  await ev(() => Save.save()); await page.reload(); await wait(500);
+  await page.keyboard.press("Enter"); await wait(300); await skipDialogue();
+  check("continue after the ending keeps chapter III progress", await ev(() => G.villagers.dojo && G.flags.puzzles.oakLanterns && G.maps.oak_roots.object[4][8] === null && G.flags.chichiHome && G.maps.overworld.object[1][11] === null));
 } catch (e) {
   check("no crash", false, e.message);
 }

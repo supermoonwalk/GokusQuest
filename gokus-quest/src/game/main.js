@@ -28,7 +28,7 @@
       else if (DIR[k] === "down" || DIR[k] === "right") { e.preventDefault(); UI.moveTitleSel(1); }
       return;
     }
-    if (G.state === "ending") { if (k === "Enter" || k === " ") { e.preventDefault(); location.reload(); } return; }
+    if (G.state === "ending") { if (k === "Enter" || k === " ") { e.preventDefault(); UI.afterEnding(); } return; }
     if (G.state === "cutscene") { if (k === "Enter" || k === " ") { e.preventDefault(); UI.endChapterCard(); } return; }
     if (G.state === "dialogue") { if (k === "Enter" || k === " " || k === "e" || k === "E") { e.preventDefault(); UI.advanceDialogue(); } return; }
     if (G.state === "shop") { if (k === "Escape" || k === "e" || k === "E") { e.preventDefault(); Shop.close(); } return; }
