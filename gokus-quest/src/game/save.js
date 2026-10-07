@@ -27,11 +27,13 @@
     try { s.removeItem(KEY); } catch (e) {}
   }
 
-  // only save in calm states: mid-dialogue/cutscene callbacks may still mutate state
+  // not during cutscenes, death or after the ending. Dialogue is fine: rewards are applied
+  // before their dialogue opens, and any follow-up a dialogue's onDone would apply (quest
+  // update, shopkeeper walk) comes from an interaction that can simply be repeated.
   function canSave() {
     const p = G.player;
     return !!p && !p.dead && G.quest !== "done" &&
-      (G.state === "play" || G.state === "menu" || G.state === "map" || G.state === "shop");
+      ["play", "menu", "map", "shop", "dialogue"].includes(G.state);
   }
 
   function snapshot() {
