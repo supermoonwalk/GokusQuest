@@ -115,7 +115,13 @@ Het verhaal van Tom en Vesper (hoofdstuk I & II) is de **proloog**. Na Vesper sp
 Elk gebied krijgt ongeveer **10 ruimtes**, waarvan **2 dungeons**, met quests, te redden kitties, geheimen
 en puzzels. Geredde dorpelingen openen winkels in het dorp (zie fase 3).
 
-#### Elderwood (gebied 1): stand van zaken
+#### Elderwood (gebied 1): af ✅
+**Eindbaas: Thornmane, de Wilde Koning.** Een enorme, wilde boskat die vindt dat elk territorium van hem is.
+Kort lontje, wil als dominant gezien worden ("MINE. MINE. ALL OF IT, MINE."). In het gevecht wordt hij bij
+elke treffer bozer en sneller (koelt af als je hem even ontwijkt). Op 60% en 30% HP **brult** hij: Goku wordt
+weggeblazen en er komen wilde bewakers bij. Verslagen geeft hij toe dat het bos van iedereen is, en vertelt hij
+over de **Getijdenkoningin** van Zeeland, die alle golven en vissen opeist (voorstel; mag anders).
+
 | Ruimte | Status | Inhoud |
 |---|---|---|
 | Elderwood-poort | ✅ | Ingang vanuit het noorden van het dorp (de doornhaag verwelkt als Vesper valt) |
@@ -123,9 +129,15 @@ en puzzels. Geredde dorpelingen openen winkels in het dorp (zie fase 3).
 | Heiligdom | ✅ | **Meester Mochi**, de dojo-kat: quest "haal mijn gestolen rol terug" |
 | Holle Eik: wortels (dungeon 1) | ✅ | **Lantaarnpuzzel**: steek 3 lantaarns aan voor ze doven |
 | Holle Eik: hart (dungeon 1) | ✅ | **Mini-baas Oude Fang**, die de rol bewaakt |
-| Ruimtes 6–9 + dungeon 2 + eindbaas | ⬜ | Achter de omgevallen reuzenboom (noorden van de Mosoversteek) |
+| Omgevallen reuzenboom | ✅ | Splijt je met Mochi's techniek zodra haar dojo open is |
+| Zonnige open plek | ✅ | **Runenpuzzel**: sla de stenen in de goede volgorde (oost, noord, west; hint op een bordje) |
+| Doornendoolhof | ✅ | Heggendoolhof, **verstopt kitten** helemaal achterin, kist |
+| Uitkijkrots | ✅ | **Gekooid kitten** bewaakt door Thornmane's bende, ingang van het hol |
+| Koningshol: buitenhal (dungeon 2) | ✅ | **Arena**: versla alle bewakers, dan rolt de barricade weg |
+| Koningshol: de lair (dungeon 2) | ✅ | **Eindbaas Thornmane** → bordje naar Zeeland verschijnt in het dorp |
 
 Mochi's dojo verhuist de **speciale aanvallen** van Whiskers naar haar kraam. De **bakker** (treats) komt nog.
+In het Elderwood zitten **3 verdwaalde kitties** (Pebble, Sprout, Fern). Chi Chi houdt thuis bij hoeveel je er gevonden hebt.
 
 ### Fase 4: Chi Chi als maatje (co-op)
 - Na de redding loopt Chi Chi met je mee: eerst als **computergestuurde bondgenoot**.

@@ -12,7 +12,8 @@
     e.maxHp = m.hp; e.hp = m.hp;
     e.atk = m.atk; e.touch = m.touch || m.atk;
     e.speed = m.speed || 0.6; e.aggro = m.aggro || 70;
-    e.coins = m.coins || 0; e.big = !!m.big;
+    e.coins = m.coins || 0; e.big = !!m.big; e.huge = !!m.huge; e.wildking = !!m.wildking;
+    e.baseSpeed = e.speed; e.anger = 0; e.roars = 0;
     e.boss = !!e.boss || !!m.boss; e.vesper = !!e.vesper || !!m.vesper;
     e.state = "roam"; e.stateT = 0; e.dir = e.dir || "down";
     e.hurtFlash = 0; e.moving = false; e.alive = (e.alive !== false);
@@ -28,9 +29,12 @@
       e.alive = true; e.dead = false;
       e.hp = e.maxHp; e.state = "roam"; e.stateT = 0; e.atkCD = 90;
       e.px = e.x * TS; e.py = e.y * TS;
-      e.dormant = !!e.wake; e.enraged = false;
+      e.dormant = !!e.wake; e.enraged = false; e.anger = 0; e.roars = 0;
+      if (e.baseSpeed) e.speed = e.baseSpeed;
       delete G.flags.defeated[e.id];
     }
+    // guards a boss called in vanish again
+    if (G.entities[map]) G.entities[map] = G.entities[map].filter(e => !e.summoned);
   }
 
   /* -------------------- per-frame update -------------------- */
@@ -90,6 +94,8 @@
       return;
     }
 
+    if (e.wildking) wildKing(e, dist);
+
     // boss phase tweaks
     if (e.vesper && !e.enraged && e.hp <= e.maxHp * 0.5) {
       e.enraged = true; e.atk += 3; e.speed += 0.25;
@@ -122,13 +128,13 @@
       e.hurtFlash = e.hurtFlash;  // keep
       // telegraph: brief pause + a flash tint via wind flag
       e.windup = true;
-      if (e.stateT > (e.big ? 26 : 18)) {
+      if (e.stateT > (e.wildking ? 14 : e.big ? 26 : 18)) {
         e.state = "lunge"; e.stateT = 0; e.windup = false;
         const a = Math.atan2(dy, dx); e.lx = Math.cos(a); e.ly = Math.sin(a);
         faceVel(e, e.lx, e.ly);
       }
     } else if (e.state === "lunge") {
-      const sp = (e.big ? 2.0 : 2.6);
+      const sp = e.wildking ? 2.4 + e.anger * 0.15 : (e.big ? 2.0 : 2.6);
       Engine.moveEntity(e, e.lx * sp, e.ly * sp, mbox(e));
       e.moving = true;
       // a lunge ends on contact instead of carrying through the player
@@ -151,6 +157,11 @@
     const again = met[e.id]; met[e.id] = true;
     if (e.id === "boss" && G.quest === "fighting") Engine.setQuest("boss");
     // first meeting: a full scene; a rematch after dying: one line and straight to it
+    if (e.wildking) {
+      if (!again) Cutscene.wildKingIntro(e);
+      else UI.showDialogue("Thornmane", ["\"YOU AGAIN?! This is MY den! MINE!\""]);
+      return;
+    }
     if (!e.vesper && e.id !== "boss") {          // any other boss: its own intro, once
       if (!again && e.intro) UI.showDialogue(World.MONSTERS[e.mon].name, e.intro);
       return;
@@ -162,9 +173,40 @@
 
   function mbox(e) { return { ox: 3, oy: 6, w: 10, h: 9 }; }
 
+  /* -------------------- Thornmane, the Wild King --------------------
+     Short fuse: every hit makes him angrier (faster, longer lunges), the
+     anger cools off when he's left alone. At 60% and 30% HP he ROARS:
+     Goku is blown back and wild guards answer the call. */
+  function wildKing(e, dist) {
+    if (e.angerT > 0) e.angerT--; else if (e.anger > 0) { e.anger--; e.angerT = 120; }
+    e.speed = e.baseSpeed * (1 + e.anger * 0.12);
+    const frac = e.hp / e.maxHp;
+    if ((e.roars === 0 && frac <= 0.6) || (e.roars === 1 && frac <= 0.3)) {
+      e.roars++;
+      popText(e.px - 6, e.py - 14, "ROAAAR!", "#ffb03a");
+      G.fx.push({ kind: "ring", x: e.px + 8, y: e.py + 8, t: 0, life: 18 });
+      G.fx.push({ kind: "flash", color: "#ffb03a", t: 0, life: 14 });
+      // the roar blows Goku back
+      const p = G.player, pc = Engine.centerOf(p);
+      const a = Math.atan2(pc.y - (e.py + 8), pc.x - (e.px + 8));
+      Engine.moveEntity(p, Math.cos(a) * 28, Math.sin(a) * 28, Engine.PBOX);
+      // and his guards come running
+      const kinds = e.roars === 1 ? ["wildcat", "wildcat"] : ["mosscat", "wildcat"];
+      const map = G.maps[G.cur];
+      kinds.forEach((mon, i) => {
+        const x = i ? map.w - 3 : 2, y = 2 + e.roars * 2;
+        const g = { type: "monster", id: "summon" + e.roars + i, mon, x, y, dir: "down", alive: true, summoned: true };
+        g.px = x * TS; g.py = y * TS; initMonster(g); g.state = "chase";
+        G.entities[G.cur].push(g);
+        G.fx.push({ kind: "poof", x: g.px + 8, y: g.py + 8, t: 0, life: 14 });
+      });
+      e.state = "recover"; e.stateT = 0;
+    }
+  }
+
   /* -------------------- body separation -------------------- */
   // closest the centres of a monster and the player may get
-  function bodyGap(e) { return e.big ? 15 : 12; }
+  function bodyGap(e) { return e.huge ? 20 : e.big ? 15 : 12; }
   // push overlapping bodies apart: monsters vs player, and monsters vs each other.
   // moves go through moveEntity, so nobody is shoved into a wall; if a monster is
   // pinned, the player takes the remaining push instead.
@@ -236,7 +278,7 @@
     for (const e of (G.entities[G.cur] || [])) {
       if (e.type !== "monster" || !e.alive) continue;
       const ec = { x: e.px + 8, y: e.py + 8 };
-      if (Math.hypot(ec.x - fx, ec.y - fy) < (e.big ? 16 : 13)) {
+      if (Math.hypot(ec.x - fx, ec.y - fy) < (e.huge ? 22 : e.big ? 16 : 13)) {
         const dmg = Math.max(1, p.atk + rnd(2) - Math.floor((e.def || 0)));
         damageMonster(e, dmg, p.dir);
         hitAny = true;
@@ -244,27 +286,52 @@
     }
     if (hitAny) { gainChi(2); }
     for (const e of (G.entities[G.cur] || [])) {
-      if (e.type !== "switch") continue;
-      if (Math.hypot(e.px + 8 - fx, e.py + 8 - fy) < 14) { e.lit = 300; G.fx.push({ kind: "ring", x: e.px + 8, y: e.py + 6, t: 0, life: 12 }); }
+      if (e.type === "switch" && Math.hypot(e.px + 8 - fx, e.py + 8 - fy) < 14) hitSwitch(e);
     }
   }
-  // lantern puzzle: each lantern burns ~5 s; all three lit together solves it
+  function hitSwitch(e) {
+    const P = World.PUZZLES[e.group];
+    if (!P || G.flags.puzzles[e.group]) return;
+    const ring = () => G.fx.push({ kind: "ring", x: e.px + 8, y: e.py + 6, t: 0, life: 12 });
+    if (P.kind === "timed") { e.lit = 300; ring(); return; }
+    if (P.kind === "order") {
+      if (e.lit) return;
+      const group = (G.entities[G.cur] || []).filter(s => s.group === e.group);
+      const next = P.order[group.filter(s => s.lit).length];
+      if (e.id === next) { e.lit = -1; ring(); }          // -1: stays lit
+      else { for (const s of group) s.lit = 0; popText(e.px - 4, e.py - 6, "fizzle...", "#9ad6ff"); }
+    }
+  }
+  // puzzles in the current room (World.PUZZLES): timed lanterns, ordered runes, arenas
   function updateSwitches() {
-    const sw = (G.entities[G.cur] || []).filter(e => e.type === "switch");
-    if (!sw.length) return;
-    for (const e of sw) if (e.lit > 0) e.lit--;
-    const b = World.OAK_BARRIER;
-    if (G.cur === b.map && !G.flags.puzzles.oakLanterns && sw.every(e => e.lit > 0)) {
-      G.flags.puzzles.oakLanterns = true;
+    const ents = G.entities[G.cur] || [];
+    for (const e of ents) if (e.type === "switch" && e.lit > 0) e.lit--;      // timed ones burn out
+    for (const id in World.PUZZLES) {
+      const P = World.PUZZLES[id];
+      if (P.map !== G.cur || G.flags.puzzles[id]) continue;
+      let solved = false;
+      if (P.kind === "clear") {
+        const mons = ents.filter(e => e.type === "monster" && !e.summoned);
+        solved = mons.length > 0 && mons.every(e => !e.alive);
+      } else {
+        const sw = ents.filter(e => e.group === id);
+        solved = sw.length > 0 && sw.every(e => e.lit);
+      }
+      if (!solved) continue;
+      G.flags.puzzles[id] = true;
       World.applyRegion(G);
       G.fx.push({ kind: "flash", color: "#ffe08a", t: 0, life: 18 });
-      UI.showDialogue(null, ["All three lanterns blaze at once. The roots shudder... and pull back into the walls!"]);
+      UI.showDialogue(null, [P.msg]);
     }
   }
 
   function damageMonster(e, dmg, fromDir) {
     e.hp -= dmg; e.hurtFlash = 6;
     popText(e.px + 4, e.py - 2, "" + dmg, "#fff");
+    if (e.wildking) {                       // short fuse
+      e.anger = Math.min(5, e.anger + 1); e.angerT = 180;
+      if (e.anger >= 3 && Math.random() < 0.35) popText(e.px - 4, e.py - 12, ["GRRR!", "MINE!", "HOW DARE YOU"][rnd(2)], "#ff8a5a");
+    }
     // knockback
     const kb = e.big ? 3 : 6;
     let kx = 0, ky = 0;

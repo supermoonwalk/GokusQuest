@@ -115,6 +115,11 @@
     G.maps.ew_shrine = World.buildEwShrine();
     G.maps.oak_roots = World.buildOakRoots();
     G.maps.oak_heart = World.buildOakHeart();
+    G.maps.ew_glade = World.buildEwGlade();
+    G.maps.ew_thorn = World.buildEwThorn();
+    G.maps.ew_overlook = World.buildEwOverlook();
+    G.maps.den_a = World.buildDenA();
+    G.maps.den_b = World.buildDenB();
     const ent = World.makeEntities();
     G.entities.overworld = ent.overworld;
     G.entities.forest = ent.forest;
@@ -307,7 +312,7 @@
       if (e.gone) continue;
       if (e.type === "monster") continue;
       if ((e.type === "item" || e.type === "gear" || e.type === "chest") && e.taken) continue;
-      if (!["sign", "clue", "item", "gear", "chest", "npc", "captive", "shop", "furniture"].includes(e.type)) continue;
+      if (!["sign", "clue", "item", "gear", "chest", "npc", "captive", "shop", "furniture", "obstacle"].includes(e.type)) continue;
       const ex = e.px + 8, ey = e.py + 8;
       const d = (ex - fx) * (ex - fx) + (ey - fy) * (ey - fy);
       if (d < bestD) { bestD = d; best = e; }
@@ -381,6 +386,7 @@
     if (e.type === "npc") { talkNPC(e); return; }
     if (e.type === "captive") { freeCaptive(e); return; }
     if (e.type === "furniture") { useFurniture(e.fid); return; }
+    if (e.type === "obstacle") { World.useObstacle(G, e); return; }
   }
 
   /* -------------------- GOKU'S HUT -------------------- */
@@ -462,7 +468,7 @@
 
   function freeCaptive(e) {
     if (e.lostKitty) {
-      G.flags.kitties[e.id] = true;
+      G.flags.kitties[e.id] = true; e.caged = false;
       const n = Object.keys(G.flags.kitties).length;
       UI.showDialogue(e.kname, ["*a tiny, shivering kitten peeks out from the leaves*",
         "\"I got lost... are you taking me HOME?\"",
@@ -646,6 +652,12 @@
     if (e.coins) spawnCoins(e.px, e.py, e.coins);
 
     if (e.vesper) { setQuest("done"); Cutscene.finale(); return; }
+    if (e.wildking) {
+      G.flags.ewKing = true;
+      for (const m of G.entities[G.cur]) if (m.summoned && m.alive) { m.alive = false; G.fx.push({ kind: "poof", x: m.px + 8, y: m.py + 8, t: 0, life: 14 }); }
+      Cutscene.wildKingDefeat(e);
+      return;
+    }
     if (e.drop === "scroll") {
       G.flags.scroll = true;
       setTimeout(() => UI.showDialogue(null, ["Old Fang slumps. The scroll rolls across the floor.",

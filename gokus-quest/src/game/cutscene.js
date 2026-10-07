@@ -224,5 +224,56 @@
     ]);
   }
 
-  window.Cutscene = { start, update, finale, tomIntro, vesperReveal, vesperIntro, get active() { return !!steps; } };
+  /* ---------- THORNMANE: the Wild King in his den ---------- */
+  function wildKingIntro(k) {
+    const p = G.player;
+    freeze();
+    k.dir = "up";                                   // busy sharpening his claws on the wall
+    start([
+      panTo(k.px + 8, k.py + 4, 50),
+      run(() => { k.shake = 40; }),
+      say(null, ["*SCRRRITCH. SCRRRITCH.* Something enormous is scratching deep grooves into the den wall."]),
+      run(() => { face(k, p); k.hop = 14; G.fx.push({ kind: "flash", color: "#ffb03a", t: 0, life: 14 });
+        Combat.popText(k.px - 6, k.py - 14, "!!", "#ffb03a"); }),
+      wait(24),
+      say("Thornmane", [
+        "\"WHO. DARES. Who dares set paw in MY den?!\"",
+        "\"This wood is MINE. That river is MINE. The shrine, the glade, the town beyond \u2014 all of it, MINE!\"",
+        "\"You broke my tree. You beat my guards. You LOOK at me like an EQUAL?!\""]),
+      say("Goku", ["The forest doesn't belong to anyone. Least of all to a bully."]),
+      run(() => { k.hop = 14; k.shake = 30; Combat.popText(k.px - 6, k.py - 14, "ROAR!", "#ff5a3a"); flash("#ff5a3a"); }),
+      say("Thornmane", ["\"BULLY?! I am the KING of the Elderwood! Kneel... or be CRUSHED!\""]),
+      panBack(),
+      run(() => { finish(); G.state = "play"; k.state = "chase"; k.stateT = 0; k.atkCD = 40; k.anger = 2; k.angerT = 180; }),
+    ]);
+  }
+  function wildKingDefeat(k) {
+    // he stays on screen, beaten (actor drawn at his size)
+    const body = { type: "actor", kind: "wildking", scale: 2, px: k.px, py: k.py, dir: "down" };
+    freeze();
+    start([
+      run(() => G.entities[G.cur].push(body)),
+      wait(45),
+      panTo(k.px + 8, k.py + 4, 30),
+      say("Thornmane", [
+        "*the giant cat sinks to the ground, panting*",
+        "\"...You didn't run. Everyone runs. The wildcats, the moss lurkers, even the old shrine cat.\"",
+        "\"I thought... if they all feared me, nobody could ever take anything from me again.\""]),
+      say("Goku", ["Nobody needs to own the forest. You could just... live in it. With everyone else."]),
+      say("Thornmane", [
+        "*a long, grumbling silence* \"...Hmph. Fine. The wood is everyone's. Don't let it go to your head, little king.\"",
+        "\"But hear this: I am not the only one who claims what isn't theirs. Down by the sea, in ZEELAND,\"",
+        "\"the Tide Queen says every wave and every fish belongs to HER. The coast road runs SOUTH of your town.\""]),
+      run(() => { smoke(body.px + 8, body.py + 8, "#5a3a1c", 8); }),
+      wait(10),
+      run(() => { G.entities[G.cur] = G.entities[G.cur].filter(e => e !== body); }),
+      wait(30),
+      say(null, ["Thornmane lumbers off into the trees. The Elderwood is free.",
+        "NEW: a sign now marks the coast road to ZEELAND, south of town."]),
+      panBack(),
+      run(() => { finish(); G.state = "play"; Engine.setQuest("zeeland"); Engine.applyVillagers(); Save.checkpoint(); }),
+    ]);
+  }
+
+  window.Cutscene = { start, update, finale, tomIntro, vesperReveal, vesperIntro, wildKingIntro, wildKingDefeat, get active() { return !!steps; } };
 })();

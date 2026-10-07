@@ -21,7 +21,8 @@ Needs a web server (scripts load as an ES module): use `npm run dev`, or serve `
 - **Vesper's grounds** (after Tom): shades, hexes, Brutus; rescue Hazel the carpenter → Hazel's Workshop (furniture, extra room); castle door → throne hall.
 - **Chapter II — Vesper's Manor**: Brutus, Shade Prowlers, Hex, 5 caged kittens to free, final boss Madame Vesper.
 - **Chapter III — Elderwood** (after Vesper, the game continues): north path from town, Master Mochi's scroll quest, Hollow Oak dungeon (lantern puzzle, Old Fang), a hidden lost kitty → Mochi's Dojo (special moves).
-- Quest chain: `start → searched → deduced → fighting → boss → tomBeaten → grounds → manor → done → ch3 → scroll → dojo`.
+- **Deep Elderwood**: split the fallen giant (after the dojo), glade rune puzzle, thornmaze, overlook, Kingsroot den (arena + boss **Thornmane, the Wild King**). 3 lost kitties.
+- Quest chain: `start → searched → deduced → fighting → boss → tomBeaten → grounds → manor → done → ch3 → scroll → dojo → deep → zeeland`.
 - Economy: coins from monsters/chests → shop (stat upgrades, special moves, treats, gear sell).
 - Gear slots: claws / collar / charm, with tiers and random rolls.
 

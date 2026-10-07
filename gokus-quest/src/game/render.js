@@ -133,7 +133,7 @@
       if (e.gone) continue;
       if (e.type === "monster" && !e.alive) continue;
       if ((e.type === "item" || e.type === "gear" || e.type === "chest") && e.taken) continue;
-      if (e.type === "sign" || e.type === "clue" || e.type === "furniture") continue;
+      if (e.type === "sign" || e.type === "clue" || e.type === "furniture" || e.type === "obstacle") continue;
       drawables.push(e);
     }
     drawables.push(G.player);
@@ -149,8 +149,9 @@
         const flash = d.hurtFlash > 0;
         if (d.vesper) Sprites2.drawVesper(ctx, sx, sy + 1, 1, { t: G.frame, flash });
         else {
-          Sprites.drawCat(ctx, World.MONSTERS[d.mon].kind, d.dir, sx, sy, { bob: walkBob(d, d.moving), flash });
-          if (d.boss) { ctx.fillStyle = "#ecc73b"; ctx.fillRect(sx + 6, sy + 1, 4, 1); ctx.fillRect(sx + 7, sy, 2, 1); }
+          if (d.huge) Sprites.drawCat(ctx, World.MONSTERS[d.mon].kind, d.dir, sx - 8, sy - 16, { bob: walkBob(d, d.moving), flash, scale: 2 });
+          else Sprites.drawCat(ctx, World.MONSTERS[d.mon].kind, d.dir, sx, sy, { bob: walkBob(d, d.moving), flash });
+          if (d.boss && !d.huge) { ctx.fillStyle = "#ecc73b"; ctx.fillRect(sx + 6, sy + 1, 4, 1); ctx.fillRect(sx + 7, sy, 2, 1); }
         }
         drawEnemyHp(ctx, d, sx, sy);
       } else if (d.type === "item") {
@@ -163,6 +164,13 @@
         // the rescued villager minds their own stall, behind the counter
         if (d.owner) Sprites.drawCat(ctx, World.VILLAGERS[d.owner].kind, "down", sx, sy - 13, { bob: walkBob(d, false) });
         drawShop(ctx, sx - 8, sy - 14, d.style);
+      } else if (d.type === "switch" && d.look === "rune") {
+        // a standing stone with a sun glyph; glows teal once struck in the right order
+        ctx.fillStyle = "#5a5f6e"; ctx.fillRect(sx + 3, sy + 1, 10, 14);
+        ctx.fillStyle = "#7a8090"; ctx.fillRect(sx + 4, sy + 2, 8, 12);
+        ctx.fillStyle = d.lit ? "#7ff0e8" : "#3e424d";
+        ctx.fillRect(sx + 7, sy + 5, 2, 6); ctx.fillRect(sx + 5, sy + 7, 6, 2);
+        if (d.lit) { ctx.save(); ctx.globalAlpha = 0.25; ctx.fillStyle = "#7ff0e8"; ctx.beginPath(); ctx.arc(sx + 8, sy + 8, 12, 0, 6.28); ctx.fill(); ctx.restore(); }
       } else if (d.type === "switch") {
         // an old lantern on a post; glows (and flickers) while lit
         ctx.fillStyle = "#4a3320"; ctx.fillRect(sx + 7, sy + 6, 2, 10);
@@ -177,6 +185,7 @@
         // scripted-only characters (Vesper appearing in the forest)
         ctx.save(); ctx.globalAlpha = d.alpha == null ? 1 : d.alpha;
         if (d.kind === "vesper") Sprites2.drawVesper(ctx, sx, sy + 1, 1, { t: G.frame });
+        else if (d.scale === 2) Sprites.drawCat(ctx, d.kind, d.dir, sx - 8, sy - 16, { scale: 2 });
         else Sprites.drawCat(ctx, d.kind, d.dir, sx, sy, {});
         ctx.restore();
       } else if (d.type === "captive") {
@@ -253,7 +262,7 @@
 
   function drawEnemyHp(ctx, e, sx, sy) {
     if (e.hp >= e.maxHp || e.hp <= 0) return;
-    const w = e.big ? 18 : 12, x = sx + (16 - w) / 2, y = sy - 3;
+    const w = e.huge ? 26 : e.big ? 18 : 12, x = sx + (16 - w) / 2, y = e.huge ? sy - 19 : sy - 3;
     ctx.fillStyle = "#1a1320"; ctx.fillRect(x - 1, y - 1, w + 2, 3);
     const pct = Math.max(0, e.hp / e.maxHp);
     ctx.fillStyle = e.boss ? "#d65a9a" : "#d65a5a"; ctx.fillRect(x, y, Math.round(w * pct), 1.5);

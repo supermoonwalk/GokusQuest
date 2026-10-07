@@ -20,7 +20,8 @@ Villagers (`world3.js`): a captive with `villager: id` is rescued into `G.villag
 Route: town → forest (side trail → hollow) → gate → grounds (side path: carpenter) → castle door → manor (throne hall).
 After Vesper (the prologue) the game continues: `UI.afterEnding()` → chapter III, `G.flags.chapter3`. Regions per DESIGN.md (Elderwood → Zeeland → Vuurland → Sahara), each region in its own `worldN.js` with `World.applyRegion(G)` for flag-driven map changes.
 Bosses (`boss: true`) never respawn; other monsters respawn after 3 min (`respawnStale` on map entry) and on death. Dungeon bosses: `wake` zone + `intro` lines + optional `drop`.
-Puzzles: `type: "switch"` lanterns (swipe to light, `lit` timer) → `G.flags.puzzles`. Lost kitties: captive with `lostKitty` → `G.flags.kitties`.
+Puzzles: `World.PUZZLES[id]` = { map, kind: timed | order | clear, barrier: {row, x0, x1} }; switches carry `group: id` (`look: "rune"` for stones); solved → `G.flags.puzzles[id]`, barrier cleared by `applyRegion`.
+Huge bosses: monster def `huge: true` (drawn at 2x, bigger hit/body radius). Thornmane (`wildking`): anger + roars that summon `summoned: true` guards (removed on reset). Lost kitties: captive with `lostKitty` → `G.flags.kitties`.
 
 ## Tech roadmap (after the DESIGN.md phases unless asked)
 1. Convert classic scripts to ES modules (`import`/`export`), entry `src/main.js`, keep behaviour identical. (Partly done: `src/main.js` imports the files in order so `vite build` bundles them; files still use globals.)

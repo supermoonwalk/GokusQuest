@@ -301,6 +301,66 @@ try {
   check("...and Whiskers no longer does", !(await visible("#shop-specials")) && await visible("#shop-stats"));
   await page.keyboard.press("Escape"); await wait(50);
 
+  // ===== the deep Elderwood =====
+  await ev(() => Engine.warpTo("ew_crossing", 10, 3, "up")); await skipDialogue();
+  await useAt(10, 2, "up"); await skipDialogue();
+  check("Mochi's technique splits the fallen giant", await ev(() => G.flags.elderLog && G.maps.ew_crossing.object[1][10] === null) && (await state()).quest === "deep");
+  await ev(() => { G.player.px = 10 * 16; G.player.py = 1 * 16; });
+  await page.keyboard.down("w"); await wait(500); await page.keyboard.up("w"); await skipDialogue();
+  check("north of the crossing lies the sunlit glade", (await state()).cur === "ew_glade");
+  await ev(() => { for (const m of G.entities.ew_glade) if (m.type === "monster") { m.alive = false; m.deadAt = G.frame; } });
+  const strike = async (x, y, d) => {
+    await ev(([x, y, d]) => { G.player.px = x * 16; G.player.py = y * 16; G.player.dir = d; G.player.atkCD = 0; }, [x, y, d]);
+    await page.keyboard.press(" "); await wait(250);
+  };
+  await strike(13, 4, "left");                              // north rune first: wrong
+  check("runes struck in the wrong order fizzle", await ev(() => G.entities.ew_glade.every(e => !e.lit) && !G.flags.puzzles.gladeRunes));
+  await strike(14, 6, "right"); await strike(13, 4, "left");
+  check("two runes in the right order stay lit", await ev(() => G.entities.ew_glade.filter(e => e.lit).length === 2 && !G.flags.puzzles.gladeRunes));
+  await strike(7, 5, "left"); await skipDialogue();
+  check("east, north, west: the thorn wall crumbles", await ev(() => G.flags.puzzles.gladeRunes && G.maps.ew_glade.object[2][10] === null));
+
+  await ev(() => Engine.warpTo("ew_thorn", 18, 7, "left")); await skipDialogue();
+  await useAt(17, 1, "right"); await skipDialogue();
+  check("a lost kitty hides at the end of the thornmaze", await ev(() => G.flags.kitties.kit_ew2));
+  await ev(() => Engine.warpTo("ew_overlook", 10, 12, "up")); await skipDialogue();
+  await useAt(4, 5, "up"); await skipDialogue();
+  check("Thornmane's guards kept a kitty caged on the overlook", await ev(() => G.flags.kitties.kit_ew3 && Object.keys(G.flags.kitties).length === 3));
+
+  // dungeon 2: the den
+  await useAt(10, 3, "up"); await wait(300); await skipDialogue();
+  check("the overlook door leads into Thornmane's den", (await state()).cur === "den_a");
+  check("a barricade blocks the den while guards remain", await ev(() => G.maps.den_a.object[3][8] === "flog"));
+  for (const id of ["d1", "d2", "d3", "d4"]) {
+    await ev((id) => { const m = G.entities.den_a.find(e => e.id === id); if (m.alive) { G.player.px = m.px; G.player.py = m.py + 14; } }, id);
+    check("den guard " + id + " beaten", await fight("den_a", id, 80));
+  }
+  await wait(200); await skipDialogue();
+  check("beating every guard opens the barricade", await ev(() => G.flags.puzzles.denArena && G.maps.den_a.object[3][8] === null));
+  await ev(() => Engine.warpTo("den_b", 9, 12, "up")); await skipDialogue();
+  await ev(() => { G.player.px = 9 * 16; G.player.py = 8 * 16; }); await wait(150);
+  check("Thornmane's entrance scene starts", await ev(() => G.scene === true));
+  check("Thornmane's entrance scene ends in the fight", (await playScene()) === "play");
+  let roared = false;
+  for (let i = 0; i < 400; i++) {
+    const s = await ev(() => { const t = G.entities.den_b.find(e => e.id === "thornmane"); if (!t.alive) return "dead";
+      const c = Engine.centerOf(G.player), dx = t.px + 8 - c.x, dy = t.py + 8 - c.y;
+      G.player.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? "left" : "right") : (dy < 0 ? "up" : "down");
+      G.player.hp = G.player.maxHp; return G.state + ":" + t.roars; });
+    if (s === "dead") break;
+    if (s.endsWith(":1") || s.endsWith(":2")) roared = true;
+    if (s.startsWith("dialogue")) await skipDialogue();
+    await page.keyboard.press(" "); await wait(50);
+  }
+  check("Thornmane roars and calls his guards", roared);
+  check("Thornmane defeated", await ev(() => !G.entities.den_b.find(e => e.id === "thornmane").alive));
+  check("Thornmane's defeat scene plays", (await playScene(30000)) === "play");
+  check("quest: on to Zeeland", (await state()).quest === "zeeland" && await ev(() => G.flags.ewKing));
+  check("summoned guards are gone", await ev(() => !G.entities.den_b.some(e => e.summoned && e.alive)));
+  check("the coast road sign appears in town", await ev(() => G.maps.overworld.object[14][12] === "sign" && !G.entities.overworld.find(e => e.id === "coastsign").gone));
+  await ev(() => Engine.onPlayerDeath()); await wait(700); await skipDialogue();
+  check("Thornmane stays beaten after a defeat", await ev(() => !G.entities.den_b.find(e => e.id === "thornmane").alive && !G.entities.den_b.some(e => e.summoned)));
+
   // regular enemies return after a while, bosses don't
   await ev(() => { for (const m of G.entities.ew_gate) if (m.type === "monster") { m.alive = false; m.dead = true; m.deadAt = G.frame - 60 * 60 * 4; } });
   await ev(() => Engine.warpTo("ew_gate", 10, 12, "up")); await skipDialogue();
@@ -310,6 +370,8 @@ try {
   await ev(() => Save.save()); await page.reload(); await wait(500);
   await page.keyboard.press("Enter"); await wait(300); await skipDialogue();
   check("continue after the ending keeps chapter III progress", await ev(() => G.villagers.dojo && G.flags.puzzles.oakLanterns && G.maps.oak_roots.object[4][8] === null && G.flags.chichiHome && G.maps.overworld.object[1][11] === null));
+  check("continue keeps the deep Elderwood open", await ev(() => G.maps.ew_crossing.object[1][10] === null && G.maps.ew_glade.object[2][10] === null &&
+    G.maps.den_a.object[3][8] === null && !G.entities.den_b.find(e => e.id === "thornmane").alive && G.maps.overworld.object[14][12] === "sign"));
 } catch (e) {
   check("no crash", false, e.message);
 }
