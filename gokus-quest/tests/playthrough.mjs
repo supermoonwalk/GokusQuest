@@ -274,6 +274,8 @@ try {
   check("the Hollow Oak door leads into the dungeon", (await state()).cur === "oak_roots");
   check("roots block the way at first", await ev(() => G.maps.oak_roots.object[4][8] === "flog"));
   await ev(() => { for (const m of G.entities.oak_roots) if (m.type === "monster") { m.alive = false; m.deadAt = G.frame; } });
+  await wait(500); await skipDialogue();                     // the room's puzzle hint
+  check("entering a puzzle room explains the puzzle", await ev(() => G.flags.puzzleHints && G.flags.puzzleHints.oakLanterns));
   const lanterns = [[3, 6, "left"], [12, 6, "right"], [8, 8, "down"]];
   for (const [i, [x, y, d]] of lanterns.entries()) {
     await ev(([x, y, d]) => { G.player.px = x * 16; G.player.py = y * 16; G.player.dir = d; G.player.atkCD = 0; }, [x, y, d]);
@@ -310,6 +312,7 @@ try {
   check("north of the crossing lies the sunlit glade", (await state()).cur === "ew_glade");
   await ev(() => { for (const m of G.entities.ew_glade) if (m.type === "monster") { m.alive = false; m.deadAt = G.frame; } });
   const strike = async (x, y, d) => {
+    await wait(400); await skipDialogue();                  // a room's puzzle hint may pop up first
     await ev(([x, y, d]) => { G.player.px = x * 16; G.player.py = y * 16; G.player.dir = d; G.player.atkCD = 0; }, [x, y, d]);
     await page.keyboard.press(" "); await wait(250);
   };

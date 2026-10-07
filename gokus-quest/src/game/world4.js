@@ -114,11 +114,16 @@
   //   clear: every enemy in the room defeated (an arena)
   W.PUZZLES = {
     oakLanterns: { map: "oak_roots", kind: "timed", barrier: { row: 4, x0: 1, x1: 14 },
-                   msg: "All three lanterns blaze at once. The roots shudder... and pull back into the walls!" },
+                   msg: "All three lanterns blaze at once. The roots shudder... and pull back into the walls!",
+                   hint: ["Roots block the way up. Three old lanterns hang in here, cold and dark.",
+                          "(Swipe each lantern with SPACE. Get all three burning at the same time before they go out!)"] },
     gladeRunes:  { map: "ew_glade", kind: "order", order: ["rune_e", "rune_n", "rune_w"], barrier: { row: 2, x0: 9, x1: 11 },
-                   msg: "East, north, west: the runes hum together. The thorn wall to the north crumbles to dust!" },
+                   msg: "East, north, west: the runes hum together. The thorn wall to the north crumbles to dust!",
+                   hint: ["A thorn wall blocks the north. Three standing stones... the sign by the path might explain them.",
+                          "(Read the sign, then swipe the stones in the right order. A wrong one resets them.)"] },
     denArena:    { map: "den_a", kind: "clear", barrier: { row: 3, x0: 1, x1: 14 },
-                   msg: "The last of Thornmane's guards flees. The log barricade to his lair rolls aside." },
+                   msg: "The last of Thornmane's guards flees. The log barricade to his lair rolls aside.",
+                   hint: ["A barricade of logs, and Thornmane's guards all around it.", "(Beat every guard and the way will open.)"] },
   };
   // 5. Hollow Oak, heart: Old Fang guards the scroll
   W.buildOakHeart = function () {

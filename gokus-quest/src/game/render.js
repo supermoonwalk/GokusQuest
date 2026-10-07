@@ -254,6 +254,15 @@
       rad.addColorStop(0.6, "rgba(8,6,12,0.32)");
       rad.addColorStop(1, "rgba(5,4,9,0.85)");
       ctx.fillStyle = rad; ctx.fillRect(0, 0, VPW, VPH);
+      // unlit puzzle pieces smoulder faintly, so you can find them in the dark
+      for (const e of (G.entities[G.cur] || [])) {
+        if (e.type !== "switch" || e.lit || (G.flags.puzzles && G.flags.puzzles[e.group])) continue;
+        const gx = Math.round(e.px - cam.x) + 8, gy = Math.round(e.py - cam.y) + 5;
+        const a = 0.22 + 0.12 * Math.sin(G.frame / 12 + e.px);
+        const ember = ctx.createRadialGradient(gx, gy, 1, gx, gy, 14);
+        ember.addColorStop(0, "rgba(255,170,80," + a.toFixed(2) + ")"); ember.addColorStop(1, "rgba(255,170,80,0)");
+        ctx.fillStyle = ember; ctx.fillRect(gx - 14, gy - 14, 28, 28);
+      }
       // lit lanterns shine through the dark
       for (const e of (G.entities[G.cur] || [])) {
         if (e.type !== "switch" || !(e.lit > 0) || (e.lit < 60 && Math.floor(G.frame / 4) % 2)) continue;

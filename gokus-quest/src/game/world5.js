@@ -233,9 +233,12 @@
   /* ---------------- puzzles ---------------- */
   Object.assign(W.PUZZLES, {
     lhBells: { map: "lh_a", kind: "order", order: ["bell_low", "bell_mid", "bell_high"], barrier: { row: 3, x0: 1, x1: 12 },
-               msg: "DING... DONG... BONG! The gate to the stairs swings open." },
+               msg: "DING... DONG... BONG! The gate to the stairs swings open.",
+               hint: ["A gate blocks the stairs. Three bells hang from the beams.", "(The keeper left a note on the wall. Ring the bells in the right order with SPACE.)"] },
     palaceShells: { map: "palace_a", kind: "timed", barrier: { row: 2, x0: 1, x1: 16 },
-               msg: "All three shells glow at once. The coral gate shrinks back like a startled anemone!" },
+               msg: "All three shells glow at once. The coral gate shrinks back like a startled anemone!",
+               hint: ["A coral gate. Three giant shells lie out on the flats.",
+                      "(Swipe all three open at the same time. They're out on the flats, so go at LOW TIDE!)"] },
   });
 
   /* ---------------- routes ---------------- */

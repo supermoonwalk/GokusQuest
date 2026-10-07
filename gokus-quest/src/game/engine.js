@@ -314,6 +314,13 @@
     respawnStale(G.cur);
     if (G.cur === "forest" && G.quest === "deduced") setQuest("fighting");
     if (G.cur === "zl_road" && G.quest === "zeeland") setQuest("zl1");
+    const hinted = G.flags.puzzleHints || (G.flags.puzzleHints = {});
+    for (const id in (World.PUZZLES || {})) {
+      const P = World.PUZZLES[id];
+      if (P.map !== G.cur || !P.hint || hinted[id] || (G.flags.puzzles && G.flags.puzzles[id])) continue;
+      hinted[id] = true;
+      setTimeout(() => { if (G.state === "play") UI.showDialogue("Goku", P.hint); }, 350);
+    }
     const firstGrounds = G.cur === "grounds" && !G.flags.enteredGrounds;
     const firstManor = G.cur === "manor" && !G.flags.enteredManor;
     if (firstGrounds) { G.flags.enteredGrounds = true; setQuest("grounds"); }

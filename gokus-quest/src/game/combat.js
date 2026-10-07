@@ -219,8 +219,14 @@
      the hall with one gap in it. Below half health the waves come
      faster and her crab guards join in (once). */
   function tideQueen(e) {
-    if (--e.waveT > 0) return;
     const half = e.hp <= e.maxHp / 2;
+    if (half && !e.called) {                       // the moment she drops below half
+      e.called = true;
+      popText(e.px - 8, e.py - 22, "GUARDS!", "#ff8a5a");
+      summonGuards(["crab", "crab"], "q", 6);
+      e.waveT = Math.min(e.waveT, 40);
+    }
+    if (--e.waveT > 0) return;
     e.waveT = half ? 120 : 190;
     const map = G.maps[G.cur];
     const fromLeft = Math.random() < 0.5;
@@ -228,11 +234,6 @@
     G.fx.push({ kind: "wave", x: fromLeft ? TS : (map.w - 1) * TS, vx: fromLeft ? 1.7 : -1.7,
                 gap, rows: map.h, t: 0, life: Math.ceil((map.w - 2) * TS / 1.7), dmg: e.atk - 2 });
     popText(e.px - 8, e.py - 14, fromLeft ? "\u2192 WAVE!" : "WAVE! \u2190", "#9ad6ff");
-    if (half && !e.called) {
-      e.called = true;
-      popText(e.px - 8, e.py - 22, "GUARDS!", "#ff8a5a");
-      summonGuards(["crab", "crab"], "q", 6);
-    }
   }
 
   /* -------------------- body separation -------------------- */
@@ -331,7 +332,12 @@
     const P = World.PUZZLES[e.group];
     if (!P || G.flags.puzzles[e.group]) return;
     const ring = () => G.fx.push({ kind: "ring", x: e.px + 8, y: e.py + 6, t: 0, life: 12 });
-    if (P.kind === "timed") { e.lit = 300; ring(); return; }
+    if (P.kind === "timed") {
+      e.lit = 420; ring();
+      const group = (G.entities[G.cur] || []).filter(s => s.group === e.group);
+      popText(e.px + 2, e.py - 6, group.filter(s => s.lit > 0).length + "/" + group.length, "#ffe08a");
+      return;
+    }
     if (P.kind === "order") {
       if (e.lit) return;
       const group = (G.entities[G.cur] || []).filter(s => s.group === e.group);
