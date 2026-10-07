@@ -22,6 +22,15 @@
 
   function onKeyDown(e) {
     const k = e.key;
+    // the menu (pause menu, or the slot picker on the title screen) takes the keys while open
+    if (Menu.isOpen()) {
+      e.preventDefault();
+      if (k === "Escape") Menu.back();
+      else if (DIR[k] === "up" || DIR[k] === "left") Menu.move(-1);
+      else if (DIR[k] === "down" || DIR[k] === "right") Menu.move(1);
+      else if (k === "Enter" || k === " " || k === "e" || k === "E") Menu.activate();
+      return;
+    }
     if (G.state === "title") {
       if (k === "Enter" || k === " ") { e.preventDefault(); UI.chooseTitle(); }
       else if (DIR[k] === "up" || DIR[k] === "left") { e.preventDefault(); UI.moveTitleSel(-1); }
@@ -38,7 +47,11 @@
     if (k === "q" || k === "Q") { e.preventDefault(); UI.toggleMenu("quest"); return; }
     if (k === "i" || k === "I") { e.preventDefault(); UI.toggleMenu("inventory"); return; }
     if (k === "m" || k === "M") { e.preventDefault(); UI.toggleMap(); return; }
-    if (k === "Escape") { UI.closeMenu(); return; }
+    if (k === "Escape") {
+      if (G.state === "menu") { UI.closeMenu(); return; }
+      if (G.state === "play") { e.preventDefault(); Menu.openPause(); }
+      return;
+    }
     if (G.state === "menu") { if (k === "Enter" || k === " ") { e.preventDefault(); UI.closeMenu(); } return; }
 
     // play
@@ -81,6 +94,10 @@
     Engine.init();
     UI.drawTitleCat();
     UI.initTitleMenu();
+    // "load another slot" from the pause menu reloads the page straight into that slot
+    let jump = null;
+    try { jump = localStorage.getItem("gokusquest.continueSlot"); localStorage.removeItem("gokusquest.continueSlot"); } catch (err) {}
+    if (jump) UI.continueGame(+jump);
 
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
@@ -93,6 +110,7 @@
     document.getElementById("btn-quest").addEventListener("click", () => UI.toggleMenu("quest"));
     document.getElementById("btn-bag").addEventListener("click", () => UI.toggleMenu("inventory"));
     document.getElementById("btn-map").addEventListener("click", () => UI.toggleMap());
+    document.getElementById("btn-menu").addEventListener("click", () => Menu.openPause());
     document.querySelectorAll(".panel-close").forEach(b => b.addEventListener("click", () => { UI.closeMenu(); UI.closeMap(); Shop.close(); }));
 
     // on-screen action buttons (touch)

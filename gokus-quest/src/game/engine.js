@@ -215,6 +215,7 @@
     G.frame++;
     if (G.state === "cutscene" && G.scene) { Cutscene.update(); Combat.tickFX(); updateCamera(); return; }
     if (G.state !== "play") return;
+    G.playFrames = (G.playFrames || 0) + 1;
     updateTide();
     handleMovement();
     Combat.update();

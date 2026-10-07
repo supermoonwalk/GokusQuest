@@ -23,11 +23,16 @@
     box.textContent = "";
     el("d-next").style.opacity = "0";
     clearInterval(typer);
+    const speed = { slow: 34, normal: 16, fast: 6 }[G.settings && G.settings.textSpeed];
+    if (!speed) {                              // instant
+      D.shown = D.full.length; box.textContent = D.full; D.typing = false; el("d-next").style.opacity = "1";
+      return;
+    }
     typer = setInterval(() => {
       D.shown++;
       box.textContent = D.full.slice(0, D.shown);
       if (D.shown >= D.full.length) { clearInterval(typer); D.typing = false; el("d-next").style.opacity = "1"; }
-    }, 16);
+    }, speed);
   }
   function advanceDialogue() {
     if (!D) return;
@@ -252,15 +257,15 @@
     Sprites.drawCat(cx, "goku", "down", 0, 0, { scale: 6 });
   }
   // title menu: CONTINUE (only with a save) / NEW GAME
-  let titleSel = 0, confirmNew = false;
+  let titleSel = 0;
   function titleOptions() {
     return Array.from(document.querySelectorAll(".title-opt")).filter(b => b.style.display !== "none");
   }
   function initTitleMenu() {
     const hasSave = Save.has();
     el("opt-continue").style.display = hasSave ? "" : "none";
-    el("opt-new").textContent = "NEW GAME";
-    titleSel = 0; confirmNew = false;
+    el("opt-load").style.display = hasSave ? "" : "none";
+    titleSel = 0;
     renderTitleMenu();
   }
   function renderTitleMenu() {
@@ -269,25 +274,22 @@
   function moveTitleSel(d) {
     const n = titleOptions().length;
     titleSel = (titleSel + d + n) % n;
-    if (confirmNew) { confirmNew = false; el("opt-new").textContent = "NEW GAME"; }
     renderTitleMenu();
   }
   function chooseTitle(act) {
     if (G.state !== "title") return;
     if (!act) { const b = titleOptions()[titleSel]; act = b && b.dataset.act; }
-    if (act === "continue") { continueGame(); return; }
+    if (act === "continue") { continueGame(Save.latest()); return; }
+    if (act === "load") { Menu.openTitlePicker("load"); return; }
     if (act === "new") {
-      // starting over wipes the save: ask once
-      if (Save.has() && !confirmNew) {
-        confirmNew = true; el("opt-new").textContent = "OVERWRITE SAVE?";
-        titleSel = titleOptions().indexOf(el("opt-new")); renderTitleMenu();
-        return;
-      }
-      Save.clear(); startGame();
+      // a new game takes the first free slot; with all three in use, pick one to overwrite
+      const free = Save.firstEmpty();
+      if (free) { Save.setSlot(free); startGame(); }
+      else Menu.openTitlePicker("new");
     }
   }
-  function continueGame() {
-    if (!Save.load()) { initTitleMenu(); return; }
+  function continueGame(n) {
+    if (!Save.load(n)) { initTitleMenu(); return; }
     el("title").classList.remove("show");
     G.state = "play";
     Engine.updateCamera(); updateHud();

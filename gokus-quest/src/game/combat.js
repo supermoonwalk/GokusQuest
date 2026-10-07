@@ -498,6 +498,7 @@
           ctx.fillStyle = "#e8f6fa"; ctx.fillRect(x + (f.vx > 0 ? 3 : -5), y + (r % 2) * 6, 2, 4);
         }
       } else if (f.kind === "flash") {
+        if (G.settings && G.settings.flashes === false) continue;
         ctx.save(); ctx.globalAlpha = 0.7 * (1 - f.t / f.life); ctx.fillStyle = f.color || "#fff";
         ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height); ctx.restore();
       } else if (f.kind === "smoke") {

@@ -165,6 +165,31 @@
   .title-opt::after{ content:"\25C4"; margin:0 0 0 1.4cqmin; }
   .title-opt.sel{ color:var(--parch2); }
   .title-opt.sel::before, .title-opt.sel::after{ visibility:visible; animation:blink 1s steps(2) infinite; }
+  #pause-panel{ z-index:40; }
+  #pause-panel .box{ width:70%; }
+  #pause-body{ display:flex; flex-direction:column; gap:1.2cqmin; }
+  .menu-btn{ font-family:'Press Start 2P',monospace; font-size:2.2cqmin; color:var(--ink); background:var(--parch2); text-align:left;
+    border:0.5cqmin solid var(--parchEdge); padding:1.4cqmin 2cqmin; cursor:pointer; }
+  .menu-btn:hover, .menu-btn:focus{ outline:none; border-color:var(--ink); background:#fff7df; }
+  .menu-btn:focus::before{ content:"\25BA "; color:var(--accent); }
+  .menu-btn[disabled]{ opacity:.45; cursor:default; }
+  .menu-btn small{ font-size:1.5cqmin; color:var(--ink2); }
+  .menu-btn.warn{ color:#a83736; }
+  .menu-btn.small{ font-size:1.6cqmin; padding:1cqmin 1.4cqmin; }
+  .slot-card{ background:var(--parch2); border:0.5cqmin solid var(--parchEdge); padding:1.4cqmin 1.8cqmin; display:flex; flex-direction:column; gap:.6cqmin; }
+  .slot-card.current{ border-color:var(--good); }
+  .slot-head{ font-family:'Press Start 2P',monospace; font-size:1.8cqmin; color:var(--accent); }
+  .slot-head small{ color:var(--good); font-size:1.4cqmin; }
+  .slot-place{ font-family:'Press Start 2P',monospace; font-size:2cqmin; color:var(--ink); }
+  .slot-place.dim{ color:#9a8c72; }
+  .slot-quest{ font-size:2.6cqmin; color:var(--ink2); }
+  .slot-meta{ font-size:2.4cqmin; color:var(--ink2); display:flex; align-items:center; gap:.6cqmin; flex-wrap:wrap; }
+  .slot-acts{ display:flex; gap:1cqmin; margin-top:.6cqmin; }
+  .menu-note{ font-size:2.6cqmin; color:var(--good); font-weight:600; }
+  .menu-confirm{ background:#fff7df; border:0.5cqmin solid var(--accent); padding:1.4cqmin; font-size:2.8cqmin; color:var(--ink); }
+  .controls-list{ display:grid; gap:.8cqmin; }
+  .controls-list div{ display:flex; justify-content:space-between; font-size:2.8cqmin; color:var(--ink2); border-bottom:0.3cqmin dashed var(--parchEdge); padding-bottom:.6cqmin; }
+  .controls-list b{ font-family:'Press Start 2P',monospace; font-size:1.8cqmin; color:var(--ink); }
   #save-toast{ position:absolute; right:2cqmin; bottom:2cqmin; z-index:25; font-family:'Press Start 2P',monospace; font-size:1.8cqmin;
     color:var(--ink); background:var(--parch); border:0.5cqmin solid var(--ink); padding:.8cqmin 1.4cqmin;
     opacity:0; transition:opacity .25s; pointer-events:none; }
@@ -214,6 +239,7 @@
           <button id="btn-quest" class="hudbtn">Q</button>
           <button id="btn-bag" class="hudbtn">BAG</button>
           <button id="btn-map" class="hudbtn">MAP</button>
+          <button id="btn-menu" class="hudbtn" title="Menu (Esc)">&#9776;</button>
         </div>
       </div>
 
@@ -280,6 +306,14 @@
         </div>
       </div>
 
+      <!-- pause menu / save files / settings (menu.js) -->
+      <div id="pause-panel" class="center-panel">
+        <div class="box panel">
+          <h2 id="pause-title">MENU</h2>
+          <div id="pause-body"></div>
+        </div>
+      </div>
+
       <!-- save indicator -->
       <div id="save-toast">&#10003; SAVED</div>
 
@@ -295,8 +329,9 @@
         <div id="title-menu">
           <button class="title-opt" id="opt-continue" data-act="continue">CONTINUE</button>
           <button class="title-opt" id="opt-new" data-act="new">NEW GAME</button>
+          <button class="title-opt" id="opt-load" data-act="load">LOAD GAME</button>
         </div>
-        <div class="ctrls">WASD / Arrows move &nbsp;&bull;&nbsp; SPACE swipe &nbsp;&bull;&nbsp; E interact &nbsp;&bull;&nbsp; J / K specials &nbsp;&bull;&nbsp; T treat &nbsp;&bull;&nbsp; M map</div>
+        <div class="ctrls">WASD / Arrows move &nbsp;&bull;&nbsp; SPACE swipe &nbsp;&bull;&nbsp; E interact &nbsp;&bull;&nbsp; J / K specials &nbsp;&bull;&nbsp; T treat &nbsp;&bull;&nbsp; M map &nbsp;&bull;&nbsp; Esc menu</div>
       </div>
 
       <!-- ending -->

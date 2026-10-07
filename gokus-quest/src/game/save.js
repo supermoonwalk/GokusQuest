@@ -1,10 +1,15 @@
 /* ============================================================
-   save.js  —  Save/load progress to localStorage. Serializes the
-   persistent parts of G plus per-entity flags (alive, taken,
-   caged, gone), and re-applies world changes (gates) on load.
+   save.js  —  Save/load progress to localStorage, in 3 slots.
+   Serializes the persistent parts of G plus per-entity flags
+   (alive, taken, caged, gone), and re-applies world changes
+   (gates) on load. The game autosaves into the current slot
+   (unless switched off in the settings).
    ============================================================ */
 (function () {
-  const KEY = "gokusquest.save.v1";
+  const LEGACY_KEY = "gokusquest.save.v1";       // single save from before slots existed
+  const SLOTS = 3;
+  const keyOf = (n) => "gokusquest.slot" + n;
+  let slot = 1;                                   // the slot this session plays in
   const VERSION = 1;
   const TS = 16;
   const AUTOSAVE_FRAMES = 300;       // ~5s at 60 updates/s
@@ -17,14 +22,43 @@
     try { return window.localStorage; } catch (e) { return null; }
   }
 
-  function has() {
-    const s = storage(); if (!s) return false;
-    try { return !!s.getItem(KEY); } catch (e) { return false; }
-  }
-
-  function clear() {
+  // an old single save becomes slot 1
+  (function migrate() {
     const s = storage(); if (!s) return;
-    try { s.removeItem(KEY); } catch (e) {}
+    try {
+      const old = s.getItem(LEGACY_KEY);
+      if (old && !s.getItem(keyOf(1))) s.setItem(keyOf(1), old);
+      if (old) s.removeItem(LEGACY_KEY);
+    } catch (e) {}
+  })();
+
+  function raw(n) {
+    const s = storage(); if (!s) return null;
+    try { const d = JSON.parse(s.getItem(keyOf(n))); return d && d.v === VERSION ? d : null; }
+    catch (e) { return null; }
+  }
+  // any slot in use?
+  function has() { for (let n = 1; n <= SLOTS; n++) if (raw(n)) return true; return false; }
+  function hasSlot(n) { return !!raw(n); }
+  // the most recently saved slot (what CONTINUE loads)
+  function latest() {
+    let best = 0, at = -1;
+    for (let n = 1; n <= SLOTS; n++) { const d = raw(n); if (d && d.at > at) { at = d.at; best = n; } }
+    return best;
+  }
+  function firstEmpty() { for (let n = 1; n <= SLOTS; n++) if (!raw(n)) return n; return 0; }
+  function clear(n) {
+    const s = storage(); if (!s) return;
+    try { s.removeItem(keyOf(n || slot)); } catch (e) {}
+  }
+  function setSlot(n) { slot = n; }
+  function getSlot() { return slot; }
+  // summary for the save-file screens
+  function info(n) {
+    const d = raw(n); if (!d) return null;
+    return { slot: n, at: d.at, cur: d.cur, quest: d.quest, coins: d.coins, time: d.time || 0,
+             kitties: Object.keys((d.flags && d.flags.kitties) || {}).length,
+             hp: d.player.hp, villagers: Object.keys(d.villagers || {}).length };
   }
 
   // not during cutscenes, death or after the ending. Dialogue is fine: rewards are applied
@@ -53,7 +87,7 @@
     const eqIndex = {};
     for (const slot in G.equipped) eqIndex[slot] = G.equipped[slot] ? G.gearOwned.indexOf(G.equipped[slot]) : -1;
     return {
-      v: VERSION, at: Date.now(),
+      v: VERSION, at: Date.now(), time: G.playFrames || 0,
       cur: G.cur,
       player: { px: p.px, py: p.py, dir: p.dir, hp: p.hp },
       coins: G.coins, treats: G.treats, chi: G.chi,
@@ -67,37 +101,41 @@
     };
   }
 
-  function save() {
+  const autosaveOn = () => !(G.settings && G.settings.autosave === false);
+  // write the current game into a slot (default: the current one)
+  function save(n) {
     if (!canSave()) return false;
     const s = storage(); if (!s) return false;
-    try { s.setItem(KEY, JSON.stringify(snapshot())); return true; }
+    try { s.setItem(keyOf(n || slot), JSON.stringify(snapshot())); return true; }
     catch (e) { return false; }
+  }
+  // the pause menu's "save": also allowed while the menu itself is open
+  function saveManual(n) {
+    const prev = G.state; if (G.state === "pause") G.state = "play";
+    const ok = save(n);
+    G.state = prev;
+    if (ok && n) slot = n;
+    return ok;
   }
 
   // save + brief on-screen indicator (used at checkpoints like map changes)
   function checkpoint() {
-    if (save() && UI.showSaved) UI.showSaved();
+    if (autosaveOn() && save() && UI.showSaved) UI.showSaved();
   }
 
   // periodic background save, called from Engine.update()
   function tick() {
     if (G.frame - lastAuto < AUTOSAVE_FRAMES) return;
     lastAuto = G.frame;
-    save();
-  }
-
-  function read() {
-    const s = storage(); if (!s) return null;
-    try {
-      const d = JSON.parse(s.getItem(KEY));
-      return d && d.v === VERSION ? d : null;
-    } catch (e) { return null; }
+    if (autosaveOn()) save();
   }
 
   // apply a saved game on top of a freshly initialised world (Engine.init)
-  function load() {
-    const d = read();
+  function load(n) {
+    if (n) slot = n;
+    const d = raw(slot);
     if (!d || !G.maps[d.cur]) return false;
+    G.playFrames = d.time || 0;
 
     G.cur = d.cur;
     // the respawn point is always Goku's hut (older saves stored the town square)
@@ -144,8 +182,8 @@
   }
 
   // flush on tab close / app backgrounding
-  window.addEventListener("beforeunload", save);
-  document.addEventListener("visibilitychange", () => { if (document.hidden) save(); });
+  window.addEventListener("beforeunload", () => { if (autosaveOn()) save(); });
+  document.addEventListener("visibilitychange", () => { if (document.hidden && autosaveOn()) save(); });
 
-  window.Save = { save, load, has, clear, checkpoint, tick };
+  window.Save = { save, saveManual, load, has, hasSlot, latest, firstEmpty, clear, setSlot, getSlot, info, checkpoint, tick, SLOTS };
 })();

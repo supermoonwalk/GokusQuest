@@ -18,6 +18,7 @@ import "./game/render.js";
 import "./game/combat.js";
 import "./game/shop.js";
 import "./game/ui.js";
+import "./game/menu.js";
 import "./game/save.js";
 import "./game/cutscene.js";
 import "./game/main.js";

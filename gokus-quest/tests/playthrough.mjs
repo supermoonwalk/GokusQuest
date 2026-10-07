@@ -78,6 +78,18 @@ try {
   await page.keyboard.down("s"); await wait(800); await page.keyboard.up("s"); await wait(200);
   check("walking out of the hut leads into town", (await state()).cur === "overworld");
 
+  // the pause menu
+  await page.keyboard.press("Escape"); await wait(100);
+  check("Esc opens the pause menu", (await ev(() => G.state)) === "pause" && await page.isVisible("#pause-panel"));
+  await page.click("#pause-body >> text=SAVE GAME"); await wait(50);
+  check("saving from the menu writes slot 1", await ev(() => Save.hasSlot(1) && Save.getSlot() === 1));
+  await page.click("#pause-body >> text=SETTINGS"); await wait(50);
+  await page.click("#pause-body >> text=TEXT SPEED"); await wait(50);
+  check("settings change and are remembered", await ev(() => G.settings.textSpeed === "fast" && localStorage.getItem("gokusquest.settings").includes("fast")));
+  await page.click("#pause-body >> text=TEXT SPEED"); await page.click("#pause-body >> text=TEXT SPEED"); await page.click("#pause-body >> text=TEXT SPEED");
+  await page.keyboard.press("Escape"); await page.keyboard.press("Escape"); await wait(100);
+  check("Esc closes the menu again", (await ev(() => G.state)) === "play" && await ev(() => G.settings.textSpeed === "normal"));
+
   // collisions: the market stall and Whiskers block movement
   await ev(() => { G.player.px = 8 * 16; G.player.py = 8 * 16; });
   await page.keyboard.down("s"); await wait(1200); await page.keyboard.up("s");
