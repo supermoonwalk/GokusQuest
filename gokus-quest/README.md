@@ -13,6 +13,8 @@ npm test           # plays the whole story in a headless browser (first time: np
 
 Needs a web server (scripts load as an ES module): use `npm run dev`, or serve `dist/` after a build. Opening `index.html` straight from disk no longer works.
 
+Testing by hand (Dutch, incl. PowerShell steps and console cheats): see `TESTEN.md`.
+
 ## Gameplay
 
 - **Town** (safe): villager, Whiskers' Market (shop), Chi Chi's cottage (enterable house with clues), Goku's hut (home base: rest, respawn, furniture with perks).

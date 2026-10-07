@@ -21,3 +21,6 @@ import "./game/ui.js";
 import "./game/save.js";
 import "./game/cutscene.js";
 import "./game/main.js";
+
+// test helpers in the browser console (cheat.help()); dev server only, never in a build
+if (import.meta.env.DEV) import("./game/cheats.js");
