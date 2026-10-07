@@ -65,6 +65,7 @@
   const SPOTS = {
     dorp:      ["overworld", 10, 9, "down"],
     hut:       ["home", 4, 4, "up"],
+    markt:     ["market", 15, 7, "up"],
     bos:       ["forest", 2, 9, "right", "bos"],
     tom:       ["forest", 18, 9, "right", "bos"],
     kasteel:   ["grounds", 1, 7, "right", "kasteel"],

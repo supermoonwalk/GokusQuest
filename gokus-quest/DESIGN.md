@@ -97,6 +97,25 @@ Na de redding opent die een eigen kraam in het dorp (`World.VILLAGERS` in `world
 
 Nog te doen: kaartenmaker, tuin, het dorp zichtbaar laten veranderen per hoofdstuk (huisjes, avondlicht, rondlopende kittens).
 
+#### Marktstraat: de dorpelingen wonen in hun eigen huis ✅
+Ten westen van het dorp ligt de **Marktstraat**. Elke geredde dorpeling bouwt daar een huis met winkel, waar je naar
+binnen kunt. De eigenaar staat achter de toonbank en begroet je in zijn eigen stijl. Tot iemand er woont, ligt er een lege kavel.
+
+| Dorpeling | Huis (buiten) | Binnen |
+|---|---|---|
+| Bramble (smid, nors) | Grijze stenen smidse, schoorsteen, gloeiende ramen, ijzerbeslagen deur | Stenen vloer, ovens, aambeeld |
+| Hazel (timmerkat, kletsgraag) | Houten werkplaats, groen dak, bloembakken | Werkbanken, stapels planken |
+| Mochi (dojo, kalm) | Wit met donkere balken, rood pagodedak, schuifdeur | Tatami, rollen aan de muur, bonsai, trainingspoppen |
+| Biscuit (bakker, hartelijk) | Crème met terracotta dak, brood in de etalage, blauwe deur | Geblokte vloer, ovens, broodkasten |
+
+Aan de zuidkant liggen nog **3 lege kavels** voor toekomstige dorpelingen. Whiskers houdt zijn marktkraam op het dorpsplein.
+**Mochi** ontmoet je in haar **tempel** bij het heiligdom in het Elderwood (je kunt naar binnen).
+
+#### Menu (Esc) ✅
+Verder spelen, **opslaan**, **savebestanden** (3 slots: plek, quest, speeltijd, munten, kitties, datum; opslaan/laden/wissen),
+**instellingen** (tekstsnelheid, schermflitsen, autosave), besturing, **co-op** en **geluid** (staan klaar als "binnenkort"),
+terug naar titelscherm. Titelscherm: CONTINUE / NEW GAME / LOAD GAME.
+
 ### Fase 3b: Na Vesper begint het echte spel
 Het verhaal van Tom en Vesper (hoofdstuk I & II) is de **proloog**. Na Vesper speel je gewoon verder:
 - Je kunt overal terug naartoe waar je al geweest bent. **Tom en Vesper (en elke eindbaas) blijven verslagen.**

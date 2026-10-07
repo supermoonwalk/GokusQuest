@@ -42,6 +42,8 @@ Controls: WASD/arrows move · Space swipe · E interact · J/K specials · T tre
 | `src/game/world.js`, `world2.js` | Maps, entities, monster stats, quest steps, warps, economy |
 | `src/game/world3.js` | Rescuable villagers + their town stalls, Thornhollow, Vesper's grounds, route/warp changes |
 | `src/game/world4.js` | Chapter III region 1: the Elderwood (10 rooms, Hollow Oak + Kingsroot den, Thornmane), Master Mochi |
+| `src/game/menu.js` | Pause menu, 3 save slots screen, settings |
+| `src/game/village.js` | Market Street: villager houses (styled per owner) + interiors, Mochi's shrine temple |
 | `src/game/world5.js` | Chapter III region 2: Zeeland (10 rooms, tides, lighthouse + sunken palace, the Tide Queen), Biscuit the baker |
 | `src/game/engine.js` | Global state `G`, movement, AABB collision, camera, interaction, warps |
 | `src/game/render.js` | Per-frame world drawing |

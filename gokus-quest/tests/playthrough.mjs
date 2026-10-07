@@ -44,6 +44,15 @@ async function playScene(maxMs = 20000) {
   }
   return ev(() => G.state);
 }
+// walk into a villager's house on Market Street and talk to them (greeting, then their shop)
+async function visitShop(id) {
+  const h = await ev((id) => World.HOUSES[id], id);
+  await ev(([x, y]) => Engine.warpTo("market", x, y, "up"), [h.x + 1, h.y + 3]); await skipDialogue();
+  await page.keyboard.down("w"); await wait(350); await page.keyboard.up("w"); await wait(200); await skipDialogue();
+  const inside = (await ev(() => G.cur)) === "in_" + id;
+  await useAt(5, 4, "up"); await skipDialogue();
+  return inside && (await ev(() => G.state)) === "shop";
+}
 async function useAt(x, y, dir) {
   await ev(([x, y, dir]) => { G.player.px = x * 16; G.player.py = y * 16; G.player.dir = dir; Engine.updateCamera(); }, [x, y, dir]);
   await page.keyboard.press("e"); await wait(80);
@@ -112,7 +121,12 @@ try {
   await useAt(2, 1, "left"); await skipDialogue();
   check("resting on the straw mat restores HP", await ev(() => G.player.hp === G.player.maxHp));
   await ev(() => Engine.warpTo("overworld", 18, 6, "down")); await skipDialogue();
-  check("no villager stalls in town yet", await ev(() => G.entities.overworld.filter(e => e.requires).every(e => e.gone)));
+  await ev(() => Engine.warpTo("overworld", 2, 10, "left")); await skipDialogue();
+  await page.keyboard.down("a"); await wait(500); await page.keyboard.up("a"); await skipDialogue();
+  check("the west path leads to Market Street", (await state()).cur === "market");
+  check("Market Street is still empty lots", await ev(() => Object.keys(World.HOUSES).every(id => !G.flags["house_" + id] &&
+    G.maps.market.object[World.HOUSES[id].y + 2][World.HOUSES[id].x + 1] === "lotstake")));
+  await ev(() => Engine.warpTo("overworld", 18, 6, "down")); await skipDialogue();
 
   // forest is locked before the clues
   await ev(() => Engine.warpTo("overworld", 21, 8, "right")); await skipDialogue();
@@ -141,9 +155,9 @@ try {
   check("Bramble the smith can be freed", (await ev(() => G.state)) === "dialogue");
   await skipDialogue();
   check("Bramble rescued, his cage is gone", await ev(() => G.villagers.smith && G.entities.hollow.find(e => e.id === "v_smith").gone));
-  check("Bramble's forge opens in town", await ev(() => !G.entities.overworld.find(e => e.id === "stall_smith").gone));
-  await ev(() => { G.coins = 500; Engine.warpTo("overworld", 11, 9, "down"); }); await skipDialogue();
-  await useAt(11, 10, "down");
+  check("Bramble builds a forge on Market Street", await ev(() => G.flags.house_smith && G.maps.market.object[4][4] === "h_smith_door"));
+  await ev(() => { G.coins = 500; });
+  check("walk into the forge and Bramble opens his shop", await visitShop("smith"));
   check("the forge sells gear", (await ev(() => G.state)) === "shop" && (await page.textContent("#shop-title")) === "Bramble's Forge" && await visible("#shop-forge"));
   const gear0 = await ev(() => G.gearOwned.length);
   await page.click("#shop-forge .shop-row:nth-child(1) .shop-buy");
@@ -190,14 +204,14 @@ try {
   await useAt(12, 11, "down");
   check("Hazel the carpenter can be freed", (await ev(() => G.state)) === "dialogue");
   await skipDialogue();
-  check("Hazel's workshop opens in town", await ev(() => G.villagers.carpenter && !G.entities.overworld.find(e => e.id === "stall_carp").gone));
+  check("Hazel builds a workshop on Market Street", await ev(() => G.villagers.carpenter && G.flags.house_carpenter));
   await useAt(26, 3, "up"); await wait(300);
   check("the castle door leads into the throne hall", (await state()).cur === "manor" && (await state()).quest === "manor");
   await skipDialogue();
 
   // Hazel: furniture and the extra room
-  await ev(() => { G.coins = 600; Engine.warpTo("overworld", 14, 3, "down"); }); await skipDialogue();
-  await useAt(14, 4, "down");
+  await ev(() => { G.coins = 600; });
+  check("walk into the workshop and Hazel opens her shop", await visitShop("carpenter"));
   check("the workshop sells furniture", (await ev(() => G.state)) === "shop" && (await page.textContent("#shop-title")) === "Hazel's Workshop" && (await page.$$("#shop-home .shop-row")).length === 7);
   const atk0 = await ev(() => G.player.atk), hp0 = await ev(() => G.player.maxHp), def0 = await ev(() => G.player.def);
   const c0 = await ev(() => G.coins);
@@ -229,7 +243,7 @@ try {
   check("continue restores progress", (await state()).quest === "manor" && await ev(() => G.maps.forest.object[9][26] === "dgate"));
   check("continue keeps furniture and the extra room", await ev(() => G.home.bed && G.maps.home.w === 15 && G.maps.home.object[1][1] === "bed"));
   check("continue keeps rescued villagers", await ev(() => G.villagers.smith && G.villagers.carpenter &&
-    !G.entities.overworld.find(e => e.id === "stall_smith").gone && G.entities.hollow.find(e => e.id === "v_smith").gone));
+    G.flags.house_smith && G.maps.market.object[4][4] === "h_smith_door" && G.entities.hollow.find(e => e.id === "v_smith").gone));
   await ev(() => { G.upgrades.atk = 8; G.upgrades.hp = 8; Engine.recalcPlayer(false); G.player.hp = G.player.maxHp; });
 
   // throne hall
@@ -279,9 +293,12 @@ try {
 
   // Master Mochi's quest
   await ev(() => Engine.warpTo("ew_shrine", 1, 7, "right")); await skipDialogue();
-  await useAt(12, 7, "right");
+  await useAt(13, 6, "up"); await wait(300); await skipDialogue();
+  check("the shrine is a temple you can enter", (await state()).cur === "shrine_in");
+  await useAt(5, 4, "up");
   check("Master Mochi asks for her scroll", (await ev(() => G.state)) === "dialogue" && (await state()).quest === "scroll");
   await skipDialogue();
+  await ev(() => Engine.warpTo("ew_shrine", 13, 6, "down")); await skipDialogue();
   await useAt(9, 3, "up"); await wait(300); await skipDialogue();
   check("the Hollow Oak door leads into the dungeon", (await state()).cur === "oak_roots");
   check("roots block the way at first", await ev(() => G.maps.oak_roots.object[4][8] === "flog"));
@@ -303,11 +320,11 @@ try {
   check("Old Fang defeated", await fight("oak_heart", "fang", 300));
   await wait(700); await skipDialogue();
   check("the scroll is recovered", await ev(() => G.flags.scroll));
-  await ev(() => Engine.warpTo("ew_shrine", 11, 7, "right")); await skipDialogue();
-  await useAt(12, 7, "right"); await skipDialogue();
-  check("Mochi moves to town and opens her dojo", await ev(() => G.villagers.dojo && !G.entities.overworld.find(e => e.id === "stall_dojo").gone) && (await state()).quest === "dojo");
-  await ev(() => Engine.warpTo("overworld", 20, 9, "down")); await skipDialogue();
-  await useAt(20, 10, "down");
+  await ev(() => Engine.warpTo("shrine_in", 5, 6, "up")); await skipDialogue();
+  await useAt(5, 4, "up"); await skipDialogue();
+  check("Mochi moves into a dojo on Market Street", await ev(() => G.villagers.dojo && G.flags.house_dojo &&
+    G.entities.shrine_in.find(e => e.id === "mochi").gone) && (await state()).quest === "dojo");
+  check("walk into the dojo and Mochi teaches", await visitShop("dojo"));
   check("the dojo teaches the special moves", (await page.textContent("#shop-title")) === "Mochi's Dojo" && await visible("#shop-specials"));
   await page.keyboard.press("Escape"); await wait(50);
   await ev(() => Engine.warpTo("shop", 5, 6, "up")); await skipDialogue();
@@ -391,9 +408,8 @@ try {
   await useAt(16, 7, "right");
   check("Biscuit the baker can be freed", (await ev(() => G.state)) === "dialogue");
   await skipDialogue();
-  check("Biscuit's bakery opens in town", await ev(() => G.villagers.baker && !G.entities.overworld.find(e => e.id === "stall_baker").gone));
-  await ev(() => Engine.warpTo("overworld", 15, 13, "down")); await skipDialogue();
-  await useAt(15, 13, "down");
+  check("Biscuit builds a bakery on Market Street", await ev(() => G.villagers.baker && G.flags.house_baker));
+  check("walk into the bakery and Biscuit opens her shop", await visitShop("baker"));
   check("the bakery sells the treats", (await page.textContent("#shop-title")) === "Biscuit's Bakery" && await visible("#shop-items"));
   await page.keyboard.press("Escape"); await wait(50);
   await ev(() => Engine.warpTo("shop", 5, 6, "up")); await skipDialogue();

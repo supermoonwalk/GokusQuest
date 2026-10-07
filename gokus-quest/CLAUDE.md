@@ -13,6 +13,8 @@ Browser pixel-art action RPG. Vanilla JS + Canvas 2D. Read README.md first.
 
 ## Direction
 Story-driven open-world top-down roguelike. Game & story plan (Dutch): `DESIGN.md` — follow its phases first.
+Menu (`menu.js`): Esc → pause menu (G.state "pause"), save slots via `Save` (3 slots, `Save.getSlot/setSlot/info/latest`), settings in `G.settings` (localStorage "gokusquest.settings").
+Villager houses (`village.js`): Market Street (`market`) west of town; `World.HOUSES[id]` footprints, interiors `in_<id>`, keeper NPC with `shopId` (+ `greet`) opens `Shop.open`. Houses/lots are placed by `applyRegion` from `G.villagers`. Mochi sits in `shrine_in`.
 Console cheats for manual testing: `src/game/cheats.js` (dev server only; `cheat.naar(stage)` sets all story flags up to that stage — add new stages when adding regions). Manual test guide: `TESTEN.md`.
 Functional test: `npm test` (tests/playthrough.mjs plays the whole story in Chromium; keep it passing, extend it with new story beats).
 Scripted scenes: `Cutscene.start([...steps])` in `src/game/cutscene.js` (helpers: wait, run, say, walkTo, panTo/panBack via `G.camFocus`, dimTo via `G.dim`, flash/smoke fx, `hop`/`shake` entity timers, `type: "actor"` entities for scene-only characters). No saving while `G.scene` is set. Bosses with `wake: {x0,y0,x1,y1}` idle until the player enters that tile rect.

@@ -117,6 +117,7 @@
         else if (oid === "farch") c = "#173016";
         else if (oid.indexOf("roof") === 0) c = "#b35a4f";
         else if (oid.indexOf("hutRoof") === 0) c = "#c89a4a";
+        else if (oid.indexOf("h_") === 0) c = oid.indexOf("roof") > 0 ? "#b35a4f" : "#8a6a44";
         else if (oid.indexOf("hutWall") === 0 || oid === "hutWindow" || oid === "hutDoor") c = "#9c7448";
         else if (["scratchpost", "fishbowl", "cushion", "trophies"].includes(oid)) c = "#8a6a44";
         else if (oid.indexOf("dwall") === 0) c = "#0f0c17";

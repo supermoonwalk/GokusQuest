@@ -110,7 +110,7 @@
   function render(ctx) {
     const map = G.maps[G.cur];
     const cam = G.camera;
-    ctx.fillStyle = (G.cur === "interior" || G.cur === "home") ? "#2a2331" : (G.cur === "manor" || G.cur === "grounds") ? "#140f1d"
+    ctx.fillStyle = (G.cur === "interior" || G.cur === "home" || G.cur.startsWith("in_") || G.cur === "shrine_in") ? "#2a2331" : (G.cur === "manor" || G.cur === "grounds") ? "#140f1d"
       : (G.cur === "forest" || G.cur === "hollow") ? "#2c4d2a" : (G.cur === "shop") ? "#3a2a1c" : "#3a5a40";
     ctx.fillRect(0, 0, VPW, VPH);
 

@@ -108,7 +108,7 @@ Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 | J / K | Speciale aanvallen |
 | T | Treat eten |
 | Q / I / M | Quest / tas / kaart |
-| Esc | Menu sluiten |
+| Esc | Menu: opslaan, savebestanden, instellingen (en terug/sluiten) |
 
 ---
 
@@ -143,6 +143,7 @@ spel daarna gewoon klopt.
 |---|---|
 | `"dorp"` | Het dorp (begin van het spel) |
 | `"hut"` | Goku's hut |
+| `"markt"` | De Marktstraat (huizen van de dorpelingen; met `cheat.winkels()` staan ze er allemaal) |
 | `"bos"` | Whiskerwood, net na de aanwijzingen in Chi Chi's huisje |
 | `"tom"` | Vlak voor Tom's open plek |
 | `"kasteel"` | Vesper's kasteelterrein (na Tom) |

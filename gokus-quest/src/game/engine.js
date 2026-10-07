@@ -131,6 +131,9 @@
     G.maps.lh_b = World.buildLhB();
     G.maps.palace_a = World.buildPalaceA();
     G.maps.palace_b = World.buildPalaceB();
+    G.maps.market = World.buildMarket();
+    for (const id in World.buildHouseIn) G.maps["in_" + id] = World.buildHouseIn[id]();
+    G.maps.shrine_in = World.buildShrineIn();
     const ent = World.makeEntities();
     G.entities.overworld = ent.overworld;
     G.entities.forest = ent.forest;
@@ -141,6 +144,7 @@
     G.entities.grounds = World.groundsEntities();
     Object.assign(G.entities, World.elderwoodEntities());
     Object.assign(G.entities, World.zeelandEntities());
+    Object.assign(G.entities, World.houseEntities());
     G.entities.manor = World.manorEntities();
     // give every entity pixel coords; init monster combat state
     for (const m in G.entities) for (const e of G.entities[m]) {
@@ -546,7 +550,8 @@
         Combat.popText(e.px, e.py - 6, "\u2665", "#ff8aa0");
         G.fx.push({ kind: "poof", x: e.px + 8, y: e.py + 8, t: 0, life: 14 });
         applyVillagers();
-        UI.showDialogue(null, [v.name + " heads for town. NEW SHOP: " + v.title + " (near the town square)."]);
+        UI.showDialogue(null, [v.name + " heads for town and moves into a new house on MARKET STREET (west of town).",
+          "NEW SHOP: " + v.title + "."]);
       });
       return;
     }
@@ -572,6 +577,10 @@
   }
 
   function talkNPC(e) {
+    if (e.shopId) {                               // a villager in their own shop
+      UI.showDialogue(World.VILLAGERS[e.shopId].name, e.greet || ["\"Welcome!\""], () => Shop.open(e.shopId));
+      return;
+    }
     if (e.id === "mochi") {
       if (G.flags.scroll) {
         UI.showDialogue("Master Mochi", [
@@ -581,7 +590,7 @@
           G.villagers.dojo = true; setQuest("dojo");
           G.fx.push({ kind: "poof", x: e.px + 8, y: e.py + 8, t: 0, life: 14 });
           applyVillagers();
-          UI.showDialogue(null, ["NEW SHOP: Mochi's Dojo (east of the pond). Special moves are taught there now."]);
+          UI.showDialogue(null, ["Mochi moves into a dojo on MARKET STREET (west of town). Special moves are taught there now."]);
         });
       } else {
         if (G.quest === "ch3") setQuest("scroll");
