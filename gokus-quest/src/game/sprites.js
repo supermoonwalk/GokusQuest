@@ -63,6 +63,8 @@ const CAT_PALETTES = {
   boss: { O:"#0e0e15", B:"#2a2a33", S:"#16161d", E:"#ecc73b", W:"#fff", I:"#d98a99", C:"#f2efe8" },
   elder: { O:"#3a3a44", B:"#c9c6cf", S:"#9a97a3", E:"#6f9e57", W:"#fff", I:"#d39bb0", C:"#e9e6ee" },
   villager: { O:"#5a3318", B:"#e2913f", S:"#b3641f", E:"#5b9e57", W:"#fff", I:"#e0908f", C:"#f2d8b0" },
+  smith: { O:"#2b2a30", B:"#6e6a72", S:"#4a474f", E:"#f08a3a", W:"#fff", I:"#d98a99", C:"#c9a27a" },
+  carpenter: { O:"#4a3a24", B:"#e8d6b0", S:"#c4ad82", E:"#5fa85f", W:"#fff", I:"#e0908f", C:"#fbf2da" },
 };
 
 // ---- Generic pixel draw ----

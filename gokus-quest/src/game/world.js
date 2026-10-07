@@ -136,15 +136,22 @@
     trophies: { name: "Trophy Shelf",   cost: 25, x: 5, y: 1, tile: "trophies",    desc: "Shows off the bosses you've beaten." },
     rug:      { name: "Woven Rug",      cost: 15, x: 4, y: 3, ground: "rug", cells: [[3, 3], [4, 3], [5, 3]], desc: "Purely cosy. Your paws will thank you." },
     plant:    { name: "Catnip Plant",   cost: 12, x: 1, y: 5, tile: "plant",       desc: "A little green. Smells wonderful." },
+    // extra room (built by Hazel)
+    dummy:    { name: "Training Dummy", cost: 45, x: 12, y: 1, tile: "dummy", room: true, desc: "+1 Defense. Practise your dodges." },
+    books:    { name: "Bookshelf",      cost: 20, x: 10, y: 1, tile: "shelf", room: true, desc: "Old adventure stories. Very inspiring." },
   };
-  function buildHome() {
-    const W = 9, H = 7;
+  function buildHome(room) {
+    const W = room ? 15 : 9, H = 7;
     const ground = grid(W, H, "floor");
     const object = grid(W, H, null);
     for (let x = 0; x < W; x++) { object[0][x] = "wallInt"; object[H - 1][x] = "wallInt"; }
     for (let y = 0; y < H; y++) { object[y][0] = "wallInt"; object[y][W - 1] = "wallInt"; }
     object[0][2] = "wallWindow"; object[0][6] = "wallWindow";
     object[H - 1][4] = "exitInt";
+    if (room) {                       // the old east wall, with a doorway into the new room
+      for (let y = 1; y < H - 1; y++) if (y !== 3) object[y][8] = "wallInt";
+      object[0][11] = "wallWindow";
+    }
     ground[1][1] = "strawmat";
     return { name: "home", w: W, h: H, ground, object, music: "home" };
   }

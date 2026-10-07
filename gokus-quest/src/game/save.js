@@ -62,7 +62,7 @@
       gearOwned: G.gearOwned.map(g => Object.assign({}, g)),
       equipped: eqIndex,
       specials: G.specials, specialsOwned: G.specialsOwned,
-      home: G.home,
+      home: G.home, villagers: G.villagers,
       entities,
     };
   }
@@ -109,6 +109,7 @@
     G.specials = d.specials || [null, null];
     G.specialsOwned = d.specialsOwned || [];
     G.home = d.home || {};
+    G.villagers = d.villagers || {};
     Engine.applyHome();
 
     G.gearOwned = d.gearOwned || [];
@@ -127,6 +128,7 @@
       }
     }
 
+    Engine.applyVillagers();
     // re-apply one-time world changes
     if (G.flags.deduced) World.openForestGate(G);
     if (G.flags.tomBeaten) World.openManorGate(G);

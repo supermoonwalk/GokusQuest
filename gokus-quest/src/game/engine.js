@@ -34,6 +34,7 @@
     specials: [null, null],          // two assignable slots (keys J / K)
     specialsOwned: [],               // unlocked special ids
     home: {},                        // furniture owned for Goku's hut: { bed: true, ... }
+    villagers: {},                   // rescued villagers (they run shops in town): { smith: true, ... }
     fx: [],                          // transient visual effects (combat.js pushes)
     coinDrops: [],                   // active coin pickups on current map
   };
@@ -106,12 +107,16 @@
     G.maps.interior = World.buildInterior();
     G.maps.manor = World.buildManor();
     G.maps.home = World.buildHome();
+    G.maps.hollow = World.buildHollow();
+    G.maps.grounds = World.buildGrounds();
     const ent = World.makeEntities();
     G.entities.overworld = ent.overworld;
     G.entities.forest = ent.forest;
     G.entities.shop = ent.shop;
     G.entities.interior = ent.interior;
     G.entities.home = ent.home;
+    G.entities.hollow = World.hollowEntities();
+    G.entities.grounds = World.groundsEntities();
     G.entities.manor = World.manorEntities();
     // give every entity pixel coords; init monster combat state
     for (const m in G.entities) for (const e of G.entities[m]) {
@@ -128,6 +133,7 @@
     };
     G.spawn = { map: "home", x: 2, y: 2 };        // respawn point: Goku's hut, by the mat
     applyHome();
+    applyVillagers();
     recalcPlayer(false);
     G.state = "title";
   }
@@ -145,6 +151,7 @@
     if (G.home.bed) maxHp += 6;
     if (G.home.post) atk += 1;
     if (G.home.cushion) maxChi += 2;
+    if (G.home.dummy) def += 1;
     // equipped gear
     const eq = G.equipped;
     if (eq.claws) atk += eq.claws.atk;
@@ -240,15 +247,21 @@
     G.fx = [];
     UI.flashTransition();
     updateCamera();
-    if (G.cur === "forest" || G.cur === "manor") G.flags.bowlReady = true;   // a trip out
+    if (["forest", "hollow", "grounds", "manor"].includes(G.cur)) G.flags.bowlReady = true;   // a trip out
     if (G.cur === "forest" && G.quest === "deduced") setQuest("fighting");
+    const firstGrounds = G.cur === "grounds" && !G.flags.enteredGrounds;
     const firstManor = G.cur === "manor" && !G.flags.enteredManor;
+    if (firstGrounds) { G.flags.enteredGrounds = true; setQuest("grounds"); }
     const firstInterior = G.cur === "interior" && !G.flags.searched;
     if (firstManor) { G.flags.enteredManor = true; setQuest("manor"); }
     if (firstInterior) { G.flags.searched = true; if (G.quest === "start") setQuest("searched"); }
     Save.checkpoint();
-    if (firstManor) {
+    if (firstGrounds) {
       setTimeout(() => UI.showChapterCard(), 260);
+      return;
+    }
+    if (firstManor) {
+      UI.showDialogue(null, ["The castle doors boom shut behind you.", "Somewhere above, kittens are crying. And that smell... lavender."]);
       return;
     }
     if (firstInterior) {
@@ -334,7 +347,7 @@
         UI.showDialogue("Goku", [
           "A treasure chest! Inside: the " + World.tierName(inst.tier) + " " + World.GEAR[inst.gid].name + ".",
           World.gearLine(inst) + (inst.equipped ? " Equipped it!" : " Stowed in your bag."),
-          "(Manage gear from the BAG menu. Sell spares at the shop.)"
+          G.villagers.smith ? "(Swap or sell gear at Bramble's Forge in town.)" : "(Check it in your BAG. Better gear is equipped automatically.)"
         ]);
       } else {
         const amt = e.coins || 10;
@@ -344,7 +357,7 @@
       }
       return;
     }
-    if (e.type === "shop") { warpTo("shop", 5, 6, "up"); return; }
+    if (e.type === "shop") { if (e.shopId) Shop.open(e.shopId); else warpTo("shop", 5, 6, "up"); return; }
     if (e.type === "npc") { talkNPC(e); return; }
     if (e.type === "captive") { freeCaptive(e); return; }
     if (e.type === "furniture") { useFurniture(e.fid); return; }
@@ -353,7 +366,9 @@
   /* -------------------- GOKU'S HUT -------------------- */
   // put owned furniture into the hut map
   function applyHome() {
-    const map = G.maps.home; if (!map) return;
+    if (!G.maps.home) return;
+    if (G.home.room && G.maps.home.w < 15) G.maps.home = World.buildHome(true);   // Hazel built the extra room
+    const map = G.maps.home;
     for (const fid in World.FURNITURE) {
       if (!G.home[fid]) continue;
       const f = World.FURNITURE[fid];
@@ -364,11 +379,20 @@
       }
     }
   }
+  // rescued villagers leave their cage and run a stall in town
+  function applyVillagers() {
+    for (const m in G.entities) for (const e of G.entities[m]) {
+      if (e.requires) e.gone = !G.villagers[e.requires];
+      if (e.villager && G.villagers[e.villager]) { e.gone = true; e.caged = false; }
+    }
+  }
+
   function buyFurniture(fid) {
     const f = World.FURNITURE[fid];
     if (!f || G.home[fid] || G.coins < f.cost) return false;
     G.coins -= f.cost; G.home[fid] = true;
-    applyHome(); recalcPlayer(true); UI.updateHud();
+    applyHome();
+    applyVillagers(); recalcPlayer(true); UI.updateHud();
     return true;
   }
   function rest() {
@@ -414,6 +438,18 @@
   }
 
   function freeCaptive(e) {
+    if (e.villager) {
+      const v = World.VILLAGERS[e.villager];
+      e.caged = false;
+      UI.showDialogue(v.name, v.lines, () => {
+        G.villagers[e.villager] = true;
+        Combat.popText(e.px, e.py - 6, "\u2665", "#ff8aa0");
+        G.fx.push({ kind: "poof", x: e.px + 8, y: e.py + 8, t: 0, life: 14 });
+        applyVillagers();
+        UI.showDialogue(null, [v.name + " heads for town. NEW SHOP: " + v.title + " (near the town square)."]);
+      });
+      return;
+    }
     if (e.kid) {
       if (e.caged) {
         e.caged = false; G.flags.kittens[e.id] = true;
@@ -451,7 +487,7 @@
       UI.showDialogue("Whiskers", ["Pop into my stall any time. Just walk up and press E to step inside."]);
       return;
     }
-    if (e.id === "shopkeep") { Shop.open(); return; }
+    if (e.id === "shopkeep") { Shop.open("whiskers"); return; }
   }
 
   // scripted walk of the shopkeeper into his shop after first chat
@@ -531,6 +567,8 @@
       p.vx = p.vy = 0; G.coinDrops = []; G.fx = [];
       // respawn fallen enemies (non-boss) so the woods refill
       Combat.resetMap("forest");
+      Combat.resetMap("hollow");
+      Combat.resetMap("grounds");
       Combat.resetMap("manor");
       updateCamera(); UI.updateHud();
       UI.showDialogue("", [
@@ -583,7 +621,7 @@
     onMonsterDefeated, onPlayerDeath, recalcPlayer,
     equipGear, unequipSlot, sellGear, autoEquipIfBetter, freedCount,
     spawnCoins, updateScriptedNpcs, centerOf, moveEntity, updateCamera, useTreat,
-    applyHome, buyFurniture,
+    applyHome, buyFurniture, applyVillagers,
     VPW, VPH, TS, PBOX, tileSolid, boxHitsSolid,
   };
 })();

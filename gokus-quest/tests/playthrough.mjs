@@ -88,25 +88,19 @@ try {
   await skipDialogue(); await wait(3000);
   check("Whiskers walks into his shop", await ev(() => G.flags.shopMoved));
 
-  // furniture: buy at Whiskers' market, it appears at home with its perk
-  await ev(() => { G.coins = 200; Engine.warpTo("shop", 5, 6, "up"); }); await skipDialogue();
+  // Whiskers only trains stats (plus specials/treats for now); no furniture, no gear
+  await ev(() => Engine.warpTo("shop", 5, 6, "up")); await skipDialogue();
   await useAt(5, 5, "up");
-  check("shop sells Home Goods", (await ev(() => G.state)) === "shop" && (await page.$$("#shop-home .shop-row")).length === 7);
-  const atk0 = await ev(() => G.player.atk), hp0 = await ev(() => G.player.maxHp);
-  await page.click("#shop-home .shop-row:nth-child(1) .shop-buy");   // bed
-  await page.click("#shop-home .shop-row:nth-child(2) .shop-buy");   // scratching post
-  await page.click("#shop-home .shop-row:nth-child(3) .shop-buy");   // fish bowl
-  check("buying furniture costs coins", (await ev(() => G.coins)) === 200 - 40 - 50 - 35);
-  check("bed: +6 max HP, post: +1 attack", (await ev(() => G.player.maxHp)) === hp0 + 6 && (await ev(() => G.player.atk)) === atk0 + 1);
+  const visible = sel => page.$eval(sel, el => el.closest(".shop-sec").style.display !== "none");
+  check("Whiskers' shop: stats yes, furniture/gear no",
+    (await ev(() => G.state)) === "shop" && await visible("#shop-stats") && !(await visible("#shop-home")) && !(await visible("#shop-forge")));
   await page.keyboard.press("Escape"); await wait(50);
   await ev(() => Engine.warpTo("home", 4, 5, "up")); await skipDialogue();
-  check("bought furniture stands in the hut", await ev(() => G.maps.home.object[1][1] === "bed" && G.maps.home.object[1][7] === "scratchpost"));
-  await ev(() => { G.player.hp = 3; G.chi = 0; });
+  await ev(() => { G.player.hp = 3; });
   await useAt(2, 1, "left"); await skipDialogue();
-  check("resting in the bed restores HP and CHI", await ev(() => G.player.hp === G.player.maxHp && G.chi === G.maxChi));
-  await useAt(7, 3, "down"); await skipDialogue();
-  check("no fish-bowl treat before a trip out", await ev(() => !G.flags.bowlReady));
+  check("resting on the straw mat restores HP", await ev(() => G.player.hp === G.player.maxHp));
   await ev(() => Engine.warpTo("overworld", 18, 6, "down")); await skipDialogue();
+  check("no villager stalls in town yet", await ev(() => G.entities.overworld.filter(e => e.requires).every(e => e.gone)));
 
   // forest is locked before the clues
   await ev(() => Engine.warpTo("overworld", 21, 8, "right")); await skipDialogue();
@@ -121,20 +115,39 @@ try {
   check("window clue -> quest 'deduced'", (await state()).quest === "deduced");
   check("forest log removed", await ev(() => G.maps.overworld.object[8][22] === null));
 
-  // forest + Tom
+  // forest
   await ev(() => Engine.warpTo("forest", 2, 9, "right")); await skipDialogue();
   check("entering forest -> quest 'fighting'", (await state()).quest === "fighting");
   check("a trip out fills the fish bowl", await ev(() => G.flags.bowlReady));
+  await ev(() => { G.upgrades.atk = 8; G.upgrades.hp = 8; G.upgrades.spd = 6; Engine.recalcPlayer(false); G.player.hp = G.player.maxHp; });
+
+  // side trail north of the fork -> Thornhollow, where Bramble the smith is caged
+  await ev(() => { G.player.px = 6 * 16; G.player.py = 2 * 16; });
+  await page.keyboard.down("w"); await wait(700); await page.keyboard.up("w"); await skipDialogue();
+  check("trail north of the fork leads to Thornhollow", (await state()).cur === "hollow");
+  await useAt(9, 3, "up");
+  check("Bramble the smith can be freed", (await ev(() => G.state)) === "dialogue");
+  await skipDialogue();
+  check("Bramble rescued, his cage is gone", await ev(() => G.villagers.smith && G.entities.hollow.find(e => e.id === "v_smith").gone));
+  check("Bramble's forge opens in town", await ev(() => !G.entities.overworld.find(e => e.id === "stall_smith").gone));
+  await ev(() => { G.coins = 500; Engine.warpTo("overworld", 11, 9, "down"); }); await skipDialogue();
+  await useAt(11, 10, "down");
+  check("the forge sells gear", (await ev(() => G.state)) === "shop" && (await page.textContent("#shop-title")) === "Bramble's Forge" && await visible("#shop-forge"));
+  const gear0 = await ev(() => G.gearOwned.length);
+  await page.click("#shop-forge .shop-row:nth-child(1) .shop-buy");
+  check("forging gives a new piece of gear", (await ev(() => G.gearOwned.length)) === gear0 + 1 && (await page.textContent("#shop-msg")).length > 0);
+  await page.keyboard.press("Escape"); await wait(50);
+
   // dying sends Goku home
+  await ev(() => Engine.warpTo("forest", 2, 9, "right")); await skipDialogue();
   await ev(() => Engine.onPlayerDeath()); await wait(700); await skipDialogue();
   check("after a defeat Goku wakes up in his hut", (await state()).cur === "home");
-  const tr = await ev(() => G.treats);
-  await useAt(7, 3, "down"); await skipDialogue();
-  check("fish bowl gives a treat after the trip", (await ev(() => G.treats)) === tr + 1);
   await ev(() => Engine.warpTo("forest", 2, 9, "right")); await skipDialogue();
+  await ev(() => { G.player.hp = G.player.maxHp; });
+
+  // Tom
   await wait(1200);
   check("Tom waits in his clearing", await ev(() => G.entities.forest.find(e => e.id === "boss").dormant));
-  await ev(() => { G.upgrades.atk = 8; G.upgrades.hp = 8; G.upgrades.spd = 6; Engine.recalcPlayer(false); G.player.hp = G.player.maxHp; });
   await ev(() => { G.player.px = 21 * 16; G.player.py = 9 * 16; }); await wait(100);
   check("Tom's entrance scene starts", await ev(() => G.scene === true) && (await state()).quest === "boss");
   await wait(600);
@@ -145,24 +158,70 @@ try {
   await wait(400);
   check("beaten Tom stays on screen", await ev(() => G.entities.forest.some(e => e.type === "actor")));
   check("Vesper's reveal plays through", (await playScene(30000)) === "play");
-  check("quest 'tomBeaten', manor gate open", (await state()).quest === "tomBeaten" && await ev(() => G.maps.forest.object[9][26] === "dgate"));
+  check("quest 'tomBeaten', gate open", (await state()).quest === "tomBeaten" && await ev(() => G.maps.forest.object[9][26] === "dgate"));
   check("Vesper took Chi Chi's cage", await ev(() => G.entities.forest.find(e => e.id === "chichi").gone));
   check("scene actors cleaned up, camera back on Goku", await ev(() => !G.entities.forest.some(e => e.type === "actor") && !G.camFocus));
+  // a defeat after beating Tom: Tom stays beaten
+  await ev(() => Engine.onPlayerDeath()); await wait(700); await skipDialogue();
+  await ev(() => Engine.warpTo("forest", 20, 9, "right")); await skipDialogue(); await wait(300);
+  check("Tom stays beaten after a defeat", await ev(() => !G.entities.forest.find(e => e.id === "boss").alive) && (await ev(() => G.state)) === "play");
+  await ev(() => { G.player.hp = G.player.maxHp; });
+
+  // through the gate: Vesper's grounds (chapter II)
+  await ev(() => { G.player.px = 25 * 16; G.player.py = 9 * 16; });
+  await page.keyboard.down("d"); await wait(600); await page.keyboard.up("d"); await wait(500);
+  check("the dark gate leads to Vesper's grounds", (await state()).cur === "grounds" && (await state()).quest === "grounds");
+  check("chapter II card", (await state()).state === "cutscene");
+  await page.keyboard.press("Enter"); await wait(100); await skipDialogue();
+  check("learned 180 Door Slam", await ev(() => G.specials.includes("slam")));
+  check("the grounds have their own enemies", await ev(() => G.entities.grounds.filter(e => e.type === "monster").length >= 5));
+  await useAt(12, 11, "down");
+  check("Hazel the carpenter can be freed", (await ev(() => G.state)) === "dialogue");
+  await skipDialogue();
+  check("Hazel's workshop opens in town", await ev(() => G.villagers.carpenter && !G.entities.overworld.find(e => e.id === "stall_carp").gone));
+  await useAt(26, 3, "up"); await wait(300);
+  check("the castle door leads into the throne hall", (await state()).cur === "manor" && (await state()).quest === "manor");
+  await skipDialogue();
+
+  // Hazel: furniture and the extra room
+  await ev(() => { G.coins = 600; Engine.warpTo("overworld", 14, 3, "down"); }); await skipDialogue();
+  await useAt(14, 4, "down");
+  check("the workshop sells furniture", (await ev(() => G.state)) === "shop" && (await page.textContent("#shop-title")) === "Hazel's Workshop" && (await page.$$("#shop-home .shop-row")).length === 7);
+  const atk0 = await ev(() => G.player.atk), hp0 = await ev(() => G.player.maxHp), def0 = await ev(() => G.player.def);
+  const c0 = await ev(() => G.coins);
+  await page.click("#shop-home .shop-row:nth-child(1) .shop-buy");   // bed
+  await page.click("#shop-home .shop-row:nth-child(2) .shop-buy");   // scratching post
+  await page.click("#shop-home .shop-row:nth-child(3) .shop-buy");   // fish bowl
+  check("buying furniture costs coins", (await ev(() => G.coins)) === c0 - 40 - 50 - 35);
+  check("bed: +6 max HP, post: +1 attack", (await ev(() => G.player.maxHp)) === hp0 + 6 && (await ev(() => G.player.atk)) === atk0 + 1);
+  await page.click("#shop-room .shop-buy");
+  check("building the extra room unlocks room furniture", (await page.$$("#shop-home .shop-row")).length === 9);
+  await page.click("#shop-home .shop-row:nth-child(8) .shop-buy");   // training dummy
+  check("training dummy: +1 defense", (await ev(() => G.player.def)) === def0 + 1);
+  await page.keyboard.press("Escape"); await wait(50);
+  await ev(() => Engine.warpTo("home", 4, 5, "up")); await skipDialogue();
+  check("the hut has grown a second room", await ev(() => G.maps.home.w === 15 && G.maps.home.object[1][12] === "dummy"));
+  check("bought furniture stands in the hut", await ev(() => G.maps.home.object[1][1] === "bed" && G.maps.home.object[1][7] === "scratchpost"));
+  await ev(() => { G.player.hp = 3; G.chi = 0; });
+  await useAt(2, 1, "left"); await skipDialogue();
+  check("resting in the bed restores HP and CHI", await ev(() => G.player.hp === G.player.maxHp && G.chi === G.maxChi));
+  const tr = await ev(() => G.treats);
+  await useAt(7, 3, "down"); await skipDialogue();
+  check("fish bowl gives a treat after a trip out", (await ev(() => G.treats)) === tr + 1);
 
   // save + continue in the middle of the story
   await ev(() => Save.save());
   await page.reload(); await wait(500);
   check("CONTINUE offered after reload", await page.isVisible("#opt-continue"));
   await page.keyboard.press("Enter"); await wait(200); await skipDialogue();
-  check("continue restores progress", (await state()).quest === "tomBeaten" && await ev(() => G.maps.forest.object[9][26] === "dgate"));
-  check("continue keeps the furniture", await ev(() => G.home.bed && G.maps.home.object[1][1] === "bed"));
+  check("continue restores progress", (await state()).quest === "manor" && await ev(() => G.maps.forest.object[9][26] === "dgate"));
+  check("continue keeps furniture and the extra room", await ev(() => G.home.bed && G.maps.home.w === 15 && G.maps.home.object[1][1] === "bed"));
+  check("continue keeps rescued villagers", await ev(() => G.villagers.smith && G.villagers.carpenter &&
+    !G.entities.overworld.find(e => e.id === "stall_smith").gone && G.entities.hollow.find(e => e.id === "v_smith").gone));
   await ev(() => { G.upgrades.atk = 8; G.upgrades.hp = 8; Engine.recalcPlayer(false); G.player.hp = G.player.maxHp; });
 
-  // manor
-  await ev(() => Engine.warpTo("manor", 10, 16, "up")); await wait(600);
-  check("chapter II card", (await state()).state === "cutscene");
-  await page.keyboard.press("Enter"); await wait(100); await skipDialogue();
-  check("learned 180 Door Slam", await ev(() => G.specials.includes("slam")));
+  // throne hall
+  await ev(() => Engine.warpTo("manor", 10, 16, "up")); await wait(300); await skipDialogue();
   await wait(1200);
   check("Vesper stays on her throne", await ev(() => G.entities.manor.find(e => e.id === "vesper").dormant));
   const k = await ev(() => { const k = G.entities.manor.find(e => e.id === "k_mittens"); return [k.x, k.y]; });

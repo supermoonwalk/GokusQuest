@@ -18,13 +18,16 @@ komen terug (roguelike), maar je huis en dorp blijven: dat is je blijvende vooru
    (bezoek, en wel een chique), een omgevallen stoel, krabsporen, Chi Chi's rode **lintje**, en een raam dat van
    buitenaf is ingeslagen met zwart-witte plukjes vacht → **Tuxedo Tom**.
 4. **Whiskerwood.** Goku duwt de omgevallen boomstam opzij en vecht zich door Tom's bende. Tom wacht in zijn
-   open plek, met Chi Chi in een kooi naast zich.
+   open plek, met Chi Chi in een kooi naast zich. Een zijpad leidt naar **Thornhollow**, waar Tom's bende
+   Bramble de smid gevangen houdt (optioneel).
 5. **Twist.** Verslagen zegt Tom dat hij alleen maar "haalt" voor zijn meesteres. **Madame Vesper** verdwijnt met
    Chi Chi in de schaduw. Er gaat een donkere poort naar haar landhuis open.
-6. **Hoofdstuk II: Vesper's landhuis.** Goku herinnert zich het spelletje van vroeger (rondtollen en de deur
-   dichtsmijten) → **180 Door Slam**. Hij bevrijdt de gekooide kittens en vindt Vesper (de lavendelgeur!) op
-   haar troon.
-7. **Finale.** Vesper valt, alle sloten springen open, Chi Chi rent naar Goku, hij geeft haar het lintje terug,
+6. **Hoofdstuk II: Vesper's kasteelterrein.** Achter de donkere poort ligt een somber park met Vesper's handlangers.
+   Goku herinnert zich het spelletje van vroeger (rondtollen en de deur dichtsmijten) → **180 Door Slam**.
+   Op een zijpad zit Hazel de timmerkat gevangen; zij moest Vesper's kooien bouwen.
+7. **Het kasteel.** Door de kasteelpoort kom je in de troonzaal. Goku bevrijdt de gekooide kittens en vindt Vesper
+   (de lavendelgeur!) op haar troon.
+8. **Finale.** Vesper valt, alle sloten springen open, Chi Chi rent naar Goku, hij geeft haar het lintje terug,
    de kittens komen erbij en samen lopen ze bij zonsopgang naar huis.
 
 ### Plotholes die zijn opgelost
@@ -66,7 +69,7 @@ automatische speltest (`npm test`).
 - Een kaal **hutje** met rieten dak en plankmuren rechtsboven in het dorp, met alleen een strozak.
   Een nieuw spel begint hier, en na doodgaan word je hier wakker.
 - **Rusten** op de strozak herstelt je HP; met een bed ook je CHI.
-- **Meubels** koop je bij Whiskers ("Home Goods") en ze verschijnen meteen op hun vaste plek:
+- **Meubels** koop je bij Hazel's werkplaats (zie fase 3) en ze verschijnen meteen op hun vaste plek:
   | Meubel | Prijs | Voordeel |
   |---|---|---|
   | Bed | 40 | Rusten vult ook CHI, +6 max HP |
@@ -77,13 +80,22 @@ automatische speltest (`npm test`).
   | Geweven kleed | 15 | Gezellig |
   | Kattenkruid-plant | 12 | Gezellig |
 - Een lege plek in de hut vertelt je welk meubel daar past en wat het kost.
-- **Nog te doen:** uitbreiding met een extra kamer, meubels zelf verplaatsen, en Chi Chi die na de redding bij je intrekt.
+- Hazel bouwt ook een **extra kamer** (120 munten) met plek voor een trainingspop (+1 verdediging) en een boekenkast.
+- **Nog te doen:** meubels zelf verplaatsen, en Chi Chi die na de redding bij je intrekt.
 
-### Fase 3: Het dorp groeit
-- Bevrijde kittens en geredde katten **verhuizen naar het dorp**, elk met een eigen huisje en functie:
-  smid (gear verbeteren), bakker (treats), kaartenmaker (wereldkaart), tuin (kruiden).
-- Bouwplekken in het dorp die je met munten/materialen vrijspeelt.
-- Het dorp verandert zichtbaar per hoofdstuk: meer huizen, licht 's avonds, kittens die rondlopen.
+### Fase 3: Het dorp groeit 🟡 (eerste twee dorpelingen)
+Elke winkel hoort bij een dorpeling die je eerst moet redden van een plek buiten de hoofdroute.
+Na de redding opent die een eigen kraam in het dorp (`World.VILLAGERS` in `world3.js`).
+
+| Dorpeling | Gered in | Winkel |
+|---|---|---|
+| Whiskers | (er vanaf het begin) | **Alleen stats.** Speciale aanvallen en treats tijdelijk ook hier, tot de bakker en de dojo-meester er zijn |
+| Bramble, de smid | **Thornhollow:** zijpad naar het noorden bij de splitsing in het bos | **Bramble's Forge:** gear smeden (willekeurige kwaliteit), wisselen, verkopen |
+| Hazel, de timmerkat | **Vesper's kasteelterrein:** zijpad naar het zuiden | **Hazel's Workshop:** meubels + extra kamer |
+| *Bakker (later)* | ? | Treats (verhuizen van Whiskers) |
+| *Dojo-meester (later)* | ? | Speciale aanvallen (verhuizen van Whiskers) |
+
+Nog te doen: kaartenmaker, tuin, het dorp zichtbaar laten veranderen per hoofdstuk (huisjes, avondlicht, rondlopende kittens).
 
 ### Fase 4: Chi Chi als maatje (co-op)
 - Na de redding loopt Chi Chi met je mee: eerst als **computergestuurde bondgenoot**.

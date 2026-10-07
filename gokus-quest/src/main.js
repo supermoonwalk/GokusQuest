@@ -10,6 +10,7 @@ import "./game/tiles2.js";
 import "./game/tiles3.js";
 import "./game/world.js";
 import "./game/world2.js";
+import "./game/world3.js";
 import "./game/engine.js";
 import "./game/render.js";
 import "./game/combat.js";

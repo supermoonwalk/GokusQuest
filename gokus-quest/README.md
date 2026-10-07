@@ -17,6 +17,8 @@ Needs a web server (scripts load as an ES module): use `npm run dev`, or serve `
 
 - **Town** (safe): villager, Whiskers' Market (shop), Chi Chi's cottage (enterable house with clues), Goku's hut (home base: rest, respawn, furniture with perks).
 - **Whiskerwood** (forest): Alley Kitten, Scruffy Stray, Mean Mouser, Shade Prowler, Hex the Hisser, boss Tuxedo Tom.
+- **Thornhollow** (side area): rescue Bramble the smith → Bramble's Forge opens in town (gear).
+- **Vesper's grounds** (after Tom): shades, hexes, Brutus; rescue Hazel the carpenter → Hazel's Workshop (furniture, extra room); castle door → throne hall.
 - **Chapter II — Vesper's Manor**: Brutus, Shade Prowlers, Hex, 5 caged kittens to free, final boss Madame Vesper.
 - Quest chain: `start → searched → deduced → fighting → boss → tomBeaten → manor → done`.
 - Economy: coins from monsters/chests → shop (stat upgrades, special moves, treats, gear sell).
@@ -33,6 +35,7 @@ Controls: WASD/arrows move · Space swipe · E interact · J/K specials · T tre
 | `src/game/sprites.js`, `sprites2.js` | Pixel sprites as string templates, recolored per palette |
 | `src/game/tiles.js`, `tiles2.js`, `tiles3.js` | 16×16 tiles baked to offscreen canvases (town, manor, forest/shop) |
 | `src/game/world.js`, `world2.js` | Maps, entities, monster stats, quest steps, warps, economy |
+| `src/game/world3.js` | Rescuable villagers + their town stalls, Thornhollow, Vesper's grounds, route/warp changes |
 | `src/game/engine.js` | Global state `G`, movement, AABB collision, camera, interaction, warps |
 | `src/game/render.js` | Per-frame world drawing |
 | `src/game/combat.js` | Real-time combat, enemy AI, specials, FX |

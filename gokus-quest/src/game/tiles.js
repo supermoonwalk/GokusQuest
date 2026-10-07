@@ -477,5 +477,13 @@
     px(ctx, "#3b3340", 9, 10, 5, 2); px(ctx, "#f6f6f6", 11, 10, 1, 2); // bowtie
   });
 
+  // training dummy (extra room): +defense
+  reg("dummy", true, (ctx) => {
+    px(ctx, "#6b4a2c", 7, 9, 2, 6); px(ctx, "#5f3f24", 4, 14, 8, 2);      // post + base
+    px(ctx, "#d8b45a", 4, 3, 8, 7); px(ctx, "#b8913e", 4, 6, 8, 1);       // straw body
+    px(ctx, "#d8b45a", 5, 0, 6, 3); px(ctx, "#3b2f25", 6, 1, 1, 1); px(ctx, "#3b2f25", 9, 1, 1, 1);
+    px(ctx, "#c96d6d", 3, 5, 10, 1);                                       // red sash
+  });
+
   window.Tiles = { TILES, TS };
 })();

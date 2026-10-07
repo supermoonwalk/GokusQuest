@@ -1,13 +1,25 @@
 /* ============================================================
-   shop.js  —  Whiskers' market: buy stat upgrades, specials,
-   treats; sell spare gear. Drives #shop-panel.
+   shop.js  —  Drives #shop-panel for every shop in town:
+     whiskers  — stat training (+ specials and treats for now)
+     smith     — Bramble's Forge: forge, equip and sell gear
+     carpenter — Hazel's Workshop: furniture and a new room
+   Each .shop-sec in the panel lists the shops it belongs to.
    ============================================================ */
 (function () {
   function el(id) { return document.getElementById(id); }
 
-  function open() {
+  const TITLES = { whiskers: "Whiskers' Market" };
+  let current = "whiskers";
+  function open(id) {
     if (G.state !== "play") return;
+    current = id || "whiskers";
     G.state = "shop";
+    const v = World.VILLAGERS[current];
+    el("shop-title").textContent = v ? v.title : TITLES[current];
+    document.querySelectorAll("#shop-panel .shop-sec").forEach(sec => {
+      sec.style.display = sec.dataset.shops.split(" ").includes(current) ? "" : "none";
+    });
+    el("shop-msg").textContent = "";
     el("shop-panel").classList.add("show");
     render();
   }
@@ -26,7 +38,47 @@
     renderSpecials();
     renderConsumables();
     renderHome();
+    renderRoom();
+    renderForge();
     renderGear();
+  }
+
+  // Bramble forges a fresh piece of gear with a random quality roll
+  const FORGE = { claws: 30, collar: 30, charm: 30 };
+  function renderForge() {
+    const wrap = el("shop-forge"); wrap.innerHTML = "";
+    for (const gid in FORGE) {
+      const g = World.GEAR[gid], cost = FORGE[gid];
+      const row = document.createElement("div"); row.className = "shop-row";
+      row.innerHTML = `<div class="shop-row-main"><span class="shop-name">${g.name}</span>
+        <span class="shop-desc">Forge new ${g.name.toLowerCase()} (${g.statLabel}). Quality is a roll of the hammer!</span></div>`;
+      row.appendChild(btn("FORGE", cost, G.coins >= cost, false, () => {
+        G.coins -= cost;
+        const inst = World.rollGear(gid);
+        G.gearOwned.push(inst);
+        Engine.autoEquipIfBetter(inst);
+        el("shop-msg").textContent = "Bramble hands you: " + World.tierName(inst.tier) + " " + g.name + " (" + World.gearLine(inst) + ")" +
+          (inst.equipped ? " Equipped!" : "");
+        render(); UI.updateHud();
+      }));
+      wrap.appendChild(row);
+    }
+  }
+
+  // Hazel can build a second room onto the hut
+  const ROOM_COST = 120;
+  function renderRoom() {
+    const wrap = el("shop-room"); wrap.innerHTML = "";
+    const row = document.createElement("div"); row.className = "shop-row";
+    row.innerHTML = `<div class="shop-row-main"><span class="shop-name">Extra Room</span>
+      <span class="shop-desc">Knock through the east wall of your hut. Room for a training dummy and a bookshelf.</span></div>`;
+    if (G.home.room) {
+      const b = document.createElement("button"); b.className = "shop-buy maxed"; b.textContent = "BUILT"; b.disabled = true;
+      row.appendChild(b);
+    } else row.appendChild(btn("BUILD", ROOM_COST, G.coins >= ROOM_COST, false, () => {
+      G.coins -= ROOM_COST; G.home.room = true; Engine.applyHome(); render(); UI.updateHud();
+    }));
+    wrap.appendChild(row);
   }
 
   // furniture for Goku's hut: bought once, appears at home with a lasting perk
@@ -34,6 +86,7 @@
     const wrap = el("shop-home"); if (!wrap) return; wrap.innerHTML = "";
     for (const fid in World.FURNITURE) {
       const f = World.FURNITURE[fid], owned = !!G.home[fid];
+      if (f.room && !G.home.room) continue;
       const row = document.createElement("div"); row.className = "shop-row";
       row.innerHTML = `<div class="shop-row-main"><span class="shop-name">${f.name}</span>
         <span class="shop-desc">${f.desc}</span></div>`;

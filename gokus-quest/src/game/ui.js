@@ -292,7 +292,7 @@
     G.state = "play";
     Engine.updateCamera(); updateHud();
     // saved right after entering the manor, before the chapter card finished
-    if (G.flags.enteredManor && !G.flags.learnedSlam) { showChapterCard(); return; }
+    if (G.flags.enteredGrounds && !G.flags.learnedSlam) { showChapterCard(); return; }
     showDialogue(null, ["Welcome back, Goku. Chi Chi is still out there."]);
   }
   let savedTimer = null;
@@ -342,7 +342,7 @@
       const key = slot === 1 ? "K" : "J";
       updateHud();
       showDialogue("Goku", [
-        "So many heavy doors... and so many cages.",
+        "A whole castle of heavy doors... and somewhere inside, cages.",
         "Goku remembers the game he and Chi Chi played as kittens: spin around, and SLAM the door shut. He KNOWS this one.",
         "NEW SPECIAL: 180 DOOR SLAM! Build CHI by swiping foes, then press " + key + " to unleash a spinning slam.",
         "(Reassign your specials any time at Whiskers' shop.) Free every kitten. Reach the throne. End the Cat Lady."

@@ -16,6 +16,8 @@ Story-driven open-world top-down roguelike. Game & story plan (Dutch): `DESIGN.m
 Functional test: `npm test` (tests/playthrough.mjs plays the whole story in Chromium; keep it passing, extend it with new story beats).
 Scripted scenes: `Cutscene.start([...steps])` in `src/game/cutscene.js` (helpers: wait, run, say, walkTo, panTo/panBack via `G.camFocus`, dimTo via `G.dim`, flash/smoke fx, `hop`/`shake` entity timers, `type: "actor"` entities for scene-only characters). No saving while `G.scene` is set. Bosses with `wake: {x0,y0,x1,y1}` idle until the player enters that tile rect.
 Solid entities (npc, chest, gear, caged captive, shop stall) block movement via `boxHitsEntity` in engine.js.
+Villagers (`world3.js`): a captive with `villager: id` is rescued into `G.villagers`; town stalls (`type: "shop"`, `requires`, `shopId`) appear via `Engine.applyVillagers()`. `Shop.open(shopId)` shows the `.shop-sec` blocks whose `data-shops` lists that id. Whiskers = stats (specials/treats only until a baker/dojo villager exists).
+Route: town → forest (side trail → hollow) → gate → grounds (side path: carpenter) → castle door → manor (throne hall).
 
 ## Tech roadmap (after the DESIGN.md phases unless asked)
 1. Convert classic scripts to ES modules (`import`/`export`), entry `src/main.js`, keep behaviour identical. (Partly done: `src/main.js` imports the files in order so `vite build` bundles them; files still use globals.)

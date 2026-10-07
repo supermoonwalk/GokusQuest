@@ -20,7 +20,14 @@
     ctx.fillStyle = "#fff0b4"; ctx.fillRect(x + ox, y + 1, Math.max(1, w / 2), 2);
   }
 
-  function drawShop(ctx, x, y) {
+  // stall colours per shop: awning stripe, hem, and the emblem on the counter
+  const STALLS = {
+    whiskers:  { a: "#d8504f", b: "#f6e7c4", hem: "#a83736" },
+    smith:     { a: "#5a5f6e", b: "#e08a3a", hem: "#3e424d" },
+    carpenter: { a: "#5fa85f", b: "#f6e7c4", hem: "#3f7a3f" },
+  };
+  function drawShop(ctx, x, y, style) {
+    const c = STALLS[style] || STALLS.whiskers;
     // a little market stall (2x2 footprint anchored top-left at x,y)
     ctx.fillStyle = "#6b4a2c"; ctx.fillRect(x + 1, y + 14, 30, 16);     // counter base
     ctx.fillStyle = "#825a36"; ctx.fillRect(x + 1, y + 14, 30, 3);
@@ -28,15 +35,22 @@
     ctx.fillStyle = "#4a3320"; ctx.fillRect(x + 1, y + 4, 2, 26); ctx.fillRect(x + 29, y + 4, 2, 26);
     // striped awning
     for (let i = 0; i < 8; i++) {
-      ctx.fillStyle = i % 2 ? "#d8504f" : "#f6e7c4";
+      ctx.fillStyle = i % 2 ? c.a : c.b;
       ctx.fillRect(x + 1 + i * 3.75, y + 2, 3.75, 7);
     }
-    ctx.fillStyle = "#a83736"; ctx.fillRect(x + 1, y + 9, 30, 1);
+    ctx.fillStyle = c.hem; ctx.fillRect(x + 1, y + 9, 30, 1);
     // scalloped hem
-    for (let i = 0; i < 4; i++) { ctx.fillStyle = "#d8504f"; ctx.fillRect(x + 2 + i * 8, y + 10, 4, 2); }
-    // a fish sign
-    ctx.fillStyle = "#e8c34a"; ctx.fillRect(x + 12, y + 18, 8, 6);
-    ctx.fillStyle = "#3b2f25"; ctx.fillRect(x + 13, y + 20, 2, 1); ctx.fillRect(x + 17, y + 20, 2, 1);
+    for (let i = 0; i < 4; i++) { ctx.fillStyle = c.a; ctx.fillRect(x + 2 + i * 8, y + 10, 4, 2); }
+    if (style === "smith") {                 // an anvil
+      ctx.fillStyle = "#3e424d"; ctx.fillRect(x + 11, y + 18, 10, 3); ctx.fillRect(x + 14, y + 21, 4, 3);
+      ctx.fillStyle = "#8a8f9c"; ctx.fillRect(x + 11, y + 18, 10, 1);
+    } else if (style === "carpenter") {      // a hammer
+      ctx.fillStyle = "#c9a46a"; ctx.fillRect(x + 15, y + 18, 2, 7);
+      ctx.fillStyle = "#5a5f6e"; ctx.fillRect(x + 12, y + 17, 8, 3);
+    } else {                                  // a fish sign
+      ctx.fillStyle = "#e8c34a"; ctx.fillRect(x + 12, y + 18, 8, 6);
+      ctx.fillStyle = "#3b2f25"; ctx.fillRect(x + 13, y + 20, 2, 1); ctx.fillRect(x + 17, y + 20, 2, 1);
+    }
   }
 
   function drawGearChest(ctx, x, y, gid) {
@@ -87,8 +101,8 @@
   function render(ctx) {
     const map = G.maps[G.cur];
     const cam = G.camera;
-    ctx.fillStyle = (G.cur === "interior" || G.cur === "home") ? "#2a2331" : (G.cur === "manor") ? "#140f1d"
-      : (G.cur === "forest") ? "#2c4d2a" : (G.cur === "shop") ? "#3a2a1c" : "#3a5a40";
+    ctx.fillStyle = (G.cur === "interior" || G.cur === "home") ? "#2a2331" : (G.cur === "manor" || G.cur === "grounds") ? "#140f1d"
+      : (G.cur === "forest" || G.cur === "hollow") ? "#2c4d2a" : (G.cur === "shop") ? "#3a2a1c" : "#3a5a40";
     ctx.fillRect(0, 0, VPW, VPH);
 
     const x0 = Math.floor(cam.x / TS), y0 = Math.floor(cam.y / TS);
@@ -142,7 +156,9 @@
       } else if (d.type === "chest") {
         drawCoinChest(ctx, sx, sy);
       } else if (d.type === "shop") {
-        drawShop(ctx, sx - 8, sy - 14);
+        // the rescued villager minds their own stall, behind the counter
+        if (d.owner) Sprites.drawCat(ctx, World.VILLAGERS[d.owner].kind, "down", sx, sy - 13, { bob: walkBob(d, false) });
+        drawShop(ctx, sx - 8, sy - 14, d.style);
       } else if (d.type === "actor") {
         // scripted-only characters (Vesper appearing in the forest)
         ctx.save(); ctx.globalAlpha = d.alpha == null ? 1 : d.alpha;
